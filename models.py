@@ -68,12 +68,16 @@ class ProblemVRP:
     """Classe représentant le problème de tournées de véhicules"""
     
     def __init__(self, n_villes: int, matrice_distances: np.ndarray, 
-                 capacite_vehicule: float, clients: List[Client]):
+                 capacite_vehicule: float, clients: List[Client], coords: np.ndarray):
         self.n_villes = n_villes
+        # matrice_distances = matrice des TEMPS de trajet (en minutes) entre villes i->j
         self.matrice_distances = matrice_distances
         self.capacite_vehicule = capacite_vehicule
         self.clients = clients
         self.depot = 0  # Le dépôt est toujours la ville 0
+        # Coordonnées des villes (pour la visualisation)
+        # np.ndarray shape (n_villes, 2) [x, y]
+        self.coords = coords
         
         # Heures de début et fin des livraisons (en minutes depuis minuit)
         self.heure_debut = 8 * 60  # 8h00

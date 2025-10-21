@@ -9,20 +9,28 @@ from genetic_algorithm import AlgorithmeGenetique
 
 # début main.py
 
-def generer_probleme_aleatoire(n_villes: int, capacite_vehicule: float = 100) -> ProblemVRP:
-    """Génère un problème aléatoire de tournées de véhicules"""
-    # Générer les coordonnées des villes
-    coords = np.random.rand(n_villes, 2) * 100
+def generer_probleme_aleatoire(n_villes: int, capacite_vehicule: float = 100, vitesse_moyenne_kmh: float = 40.0, seed: int = None) -> ProblemVRP:
+    """Génère un problème aléatoire de tournées de véhicules
+    - Les distances géométriques (coords en km) sont converties en temps (minutes) via une vitesse moyenne.
+    """
+    if seed is not None:
+        np.random.seed(seed)
+        random.seed(seed)
+
+    # Générer les coordonnées des villes (km) sur un carré 100x100
+    coords = np.random.rand(n_villes, 2) * 100.0  # km
     
-    # Calculer la matrice des distances
-    matrice_distances = np.zeros((n_villes, n_villes))
+    # Calculer la matrice des temps de trajet (en minutes) à partir des distances et de la vitesse
+    matrice_temps = np.zeros((n_villes, n_villes))
     for i in range(n_villes):
         for j in range(n_villes):
             if i != j:
-                matrice_distances[i, j] = np.sqrt(
+                distance_km = np.sqrt(
                     (coords[i, 0] - coords[j, 0]) ** 2 + 
                     (coords[i, 1] - coords[j, 1]) ** 2
                 )
+                # temps (min) = distance (km) / vitesse (km/h) * 60
+                matrice_temps[i, j] = (distance_km / max(vitesse_moyenne_kmh, 1e-6)) * 60.0
     
     # Générer les clients (sans le dépôt)
     clients = []
@@ -32,9 +40,10 @@ def generer_probleme_aleatoire(n_villes: int, capacite_vehicule: float = 100) ->
     
     return ProblemVRP(
         n_villes=n_villes,
-        matrice_distances=matrice_distances,
+        matrice_distances=matrice_temps,  # minutes
         capacite_vehicule=capacite_vehicule,
-        clients=clients
+        clients=clients,
+        coords=coords
     )
 
 
@@ -42,7 +51,7 @@ def afficher_solution(solution, probleme: ProblemVRP):
     """Affiche une solution de manière lisible"""
     print("\nSolution détaillée:")
     print(f"Nombre de tournées: {len(solution.tournees)}")
-    print(f"Fitness totale: {solution.fitness:.2f}")
+    print(f"Fitness totale: {solution.fitness:.2f} (en minutes, pénalités incluses)")
     
     temps_total = 0
     charge_totale = 0
@@ -104,9 +113,10 @@ def afficher_solution(solution, probleme: ProblemVRP):
     print(f"Moyenne par tournée: {temps_total / len(solution.tournees):.1f} minutes ({temps_total/60/len(solution.tournees):.2f}h)")
     print(f"Tournée la plus longue: {temps_max:.1f} minutes ({temps_max/60:.2f}h)")
     print(f"Tournée la plus courte: {temps_min:.1f} minutes ({temps_min/60:.2f}h)")
-    print(f"Écart-type des durées: {np.std([calcul_temps_tournee(t, probleme) for t in solution.tournees]):.1f} minutes")
-    print(f"Charge moyenne par tournée: {charge_totale / len(solution.tournees):.1f} / {probleme.capacite_vehicule}")
-    print(f"Clients par tournée en moyenne: {clients_total / len(solution.tournees):.1f}")
+    if len(solution.tournees) > 0:
+        print(f"Écart-type des durées: {np.std([calcul_temps_tournee(t, probleme) for t in solution.tournees]):.1f} minutes")
+        print(f"Charge moyenne par tournée: {charge_totale / len(solution.tournees):.1f} / {probleme.capacite_vehicule}")
+        print(f"Clients par tournée en moyenne: {clients_total / len(solution.tournees):.1f}")
 
 
 def calcul_temps_tournee(tournee: Tournee, probleme: ProblemVRP) -> float:
@@ -128,6 +138,60 @@ def calcul_temps_tournee(tournee: Tournee, probleme: ProblemVRP) -> float:
     return temps_total
 
 
+def afficher_solution_graphique(solution: Solution, probleme: ProblemVRP, titre: str = "Solution (dernière génération)"):
+    """Affiche la solution sous forme de graphe: villes = points, tournées = couleurs, arcs = trajets"""
+    try:
+        import matplotlib.pyplot as plt
+        import matplotlib.cm as cm
+        import itertools
+    except ImportError:
+        print("Matplotlib n'est pas installé. Impossible d'afficher la solution graphiquement.")
+        return
+    
+    coords = probleme.coords
+    if coords is None or len(coords) != probleme.n_villes:
+        print("Coordonnées indisponibles, impossible de tracer.")
+        return
+    
+    fig, ax = plt.subplots(figsize=(8, 8))
+    ax.set_title(titre)
+    
+    # Palette de couleurs
+    # On itère sur une palette large pour couvrir plusieurs tournées
+    couleurs_base = [cm.tab20(i) for i in range(20)]
+    couleurs = itertools.cycle(couleurs_base)
+    
+    # Tracer le dépôt
+    ax.scatter(coords[0, 0], coords[0, 1], c='black', s=80, marker='s', label='Dépôt (0)')
+    ax.annotate("0", (coords[0, 0], coords[0, 1]), textcoords="offset points", xytext=(5, 5), fontsize=9)
+    
+    # Tracer les clients
+    ax.scatter(coords[1:, 0], coords[1:, 1], c='gray', s=30, marker='o')
+    for i in range(1, probleme.n_villes):
+        ax.annotate(str(i), (coords[i, 0], coords[i, 1]), textcoords="offset points", xytext=(5, 5), fontsize=8)
+    
+    # Tracer chaque tournée avec une couleur différente
+    for t_idx, tournee in enumerate(solution.tournees):
+        col = next(couleurs)
+        # Construire la séquence de villes: dépôt -> clients -> dépôt
+        chemin = [0] + [c.id for c in tournee.clients] + [0]
+        xs = [coords[i, 0] for i in chemin]
+        ys = [coords[i, 1] for i in chemin]
+        ax.plot(xs, ys, '-', color=col, linewidth=2, label=f"Tournée {t_idx+1}")
+        # Mettre en évidence les points de cette tournée
+        ax.scatter([coords[i, 0] for i in chemin[1:-1]],
+                   [coords[i, 1] for i in chemin[1:-1]],
+                   color=col, s=40, zorder=3)
+    
+    ax.set_xlabel("X (km)")
+    ax.set_ylabel("Y (km)")
+    ax.set_aspect('equal', adjustable='box')
+    ax.legend(loc='best', fontsize=8)
+    ax.grid(True, alpha=0.2)
+    plt.tight_layout()
+    plt.show()
+
+
 def main():
     # Configuration du logging
     logging.basicConfig(
@@ -141,10 +205,11 @@ def main():
     # Paramètres du problème
     n_villes = 30  # Nombre total de villes (incluant le dépôt)
     capacite_vehicule = 100
+    vitesse_moyenne_kmh = 40.0  # Pour convertir distances->temps (minutes)
     
     # Générer un problème aléatoire
     print("Génération du problème...")
-    probleme = generer_probleme_aleatoire(n_villes, capacite_vehicule)
+    probleme = generer_probleme_aleatoire(n_villes, capacite_vehicule, vitesse_moyenne_kmh)
     print(f"Problème généré avec {n_villes} villes et {len(probleme.clients)} clients")
     
     # Paramètres de l'algorithme génétique
@@ -168,7 +233,9 @@ def main():
     
     # Afficher la solution
     afficher_solution(solution, probleme)
-
+    # Affichage graphique de la solution de la dernière génération (meilleure solution)
+    afficher_solution_graphique(solution, probleme, titre="Tournées optimisées (minutes)")
+    
 
 if __name__ == "__main__":
     main()

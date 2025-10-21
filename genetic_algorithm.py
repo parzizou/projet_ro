@@ -98,7 +98,7 @@ class AlgorithmeGenetique:
                 # Calculer les valeurs pour chaque client non assigné
                 valeurs = {}
                 for client in clients_non_assignes:
-                    # Valeur inversement proportionnelle à la distance
+                    # Valeur inversement proportionnelle au temps de trajet depuis la position actuelle
                     distance = self.probleme.matrice_distances[position_actuelle][client.id]
                     valeurs[client] = 1000 / (distance + 1)
                 
@@ -114,7 +114,7 @@ class AlgorithmeGenetique:
                 if not clients_selectionnes:
                     break
                 
-                # Ajouter les clients sélectionnés à la tournée dans l'ordre du plus proche
+                # Ajouter les clients sélectionnés à la tournée dans l'ordre du plus proche (en temps)
                 clients_selectionnes.sort(
                     key=lambda c: self.probleme.matrice_distances[position_actuelle][c.id]
                 )
@@ -156,16 +156,15 @@ class AlgorithmeGenetique:
                 selectionnes.append(client)
                 poids_total += poids
                 
-                # Si on a pris trop de clients, on s'arrête
-                if len(selectionnes) >= 10:  # Limite arbitraire pour éviter des tournées trop longues
+                # Limite pour éviter des tournées trop longues (pragmatique)
+                if len(selectionnes) >= 10:
                     break
         
         return selectionnes
     
     def evaluer_fitness(self, solution: Solution):
-        """Évalue la qualité d'une solution avec des pénalités ajustées"""
+        """Évalue la qualité d'une solution avec des pénalités ajustées (temps en minutes)"""
         temps_total = 0
-        temps_max_tournee = 0
         depassements_horaires = 0
         
         for tournee in solution.tournees:
@@ -175,7 +174,7 @@ class AlgorithmeGenetique:
             heure_actuelle = self.probleme.heure_debut  # Commencer à 8h00
             
             for client in tournee.clients:
-                # Ajouter temps de trajet
+                # Ajouter temps de trajet (minutes)
                 temps_trajet = self.probleme.matrice_distances[position_actuelle][client.id]
                 temps_tournee += temps_trajet
                 heure_actuelle += temps_trajet
@@ -186,7 +185,7 @@ class AlgorithmeGenetique:
                 temps_tournee += temps_service
                 heure_actuelle += temps_service
                 
-                # Vérifier capacité
+                # Mettre à jour la charge
                 charge_actuelle += client.taille_commande
             
             # Retour au dépôt
@@ -195,40 +194,38 @@ class AlgorithmeGenetique:
             heure_actuelle += temps_retour
             
             temps_total += temps_tournee
-            temps_max_tournee = max(temps_max_tournee, temps_tournee)
             
-            # Vérifier dépassement horaire
+            # Dépassement horaire (au-delà de 18h)
             if heure_actuelle > self.probleme.heure_fin:
                 depassement = heure_actuelle - self.probleme.heure_fin
                 depassements_horaires += depassement
         
-        # Calcul des pénalités
+        # Pénalités
         penalites = 0
         
-        # Pénalité pour le nombre de véhicules (moins forte)
-        penalites += 50 * len(solution.tournees)
+        # Pénalité légère pour le nombre de véhicules (on priorise le temps total)
+        penalites += 10 * len(solution.tournees)
         
-        # Pénalité pour déséquilibre entre les tournées
+        # Pénalité légère pour déséquilibre entre tournées (écart-type des durées)
         tournees_non_vides = [t for t in solution.tournees if not t.est_vide()]
         if tournees_non_vides:
             temps_moyen = temps_total / len(tournees_non_vides)
             variance = sum((self.calculer_temps_tournee(t) - temps_moyen)**2 
                           for t in tournees_non_vides) / len(tournees_non_vides)
-            penalites += 0.5 * variance**0.5  # Écart-type comme pénalité
+            penalites += 0.2 * (variance**0.5)
         
-        # Forte pénalité pour dépassement horaire
-        penalites += 1000 * depassements_horaires
-        
-        # Pénalité pour dépassement de capacité
+        # Pénalité forte pour dépassement horaire et capacité
+        penalites += 1000 * depassements_horaires  # minutes de dépassement
         for tournee in solution.tournees:
-            if tournee.charge_totale() > self.probleme.capacite_vehicule:
-                penalites += 5000 * (tournee.charge_totale() - self.probleme.capacite_vehicule)
+            excedent = tournee.charge_totale() - self.probleme.capacite_vehicule
+            if excedent > 0:
+                penalites += 5000 * excedent  # très dissuasif
         
         solution.fitness = temps_total + penalites
         return solution.fitness
     
     def calculer_temps_tournee(self, tournee: Tournee) -> float:
-        """Calcule le temps total d'une tournée (trajet + service)"""
+        """Calcule le temps total d'une tournée (trajet + service), en minutes"""
         temps_total = 0
         position_actuelle = self.probleme.depot
         
@@ -291,7 +288,7 @@ class AlgorithmeGenetique:
                     enfant_clients[i] = ordre_p2[idx_p2]
                     idx_p2 += 1
         
-        # Convertir la liste de clients en une solution avec l'algorithme du sac à dos
+        # Convertir la liste ordonnée en solution par knapsack (respect capacité)
         enfant = self.clients_to_solution_knapsack(enfant_clients)
         
         return enfant
@@ -412,8 +409,8 @@ class AlgorithmeGenetique:
             
             if clients_communs:
                 # Supprimer les tournées originales
-                t1 = nouvelle_solution.tournees.pop(max(tournee1_idx, tournee2_idx))
-                t2 = nouvelle_solution.tournees.pop(min(tournee1_idx, tournee2_idx))
+                _ = nouvelle_solution.tournees.pop(max(tournee1_idx, tournee2_idx))
+                _ = nouvelle_solution.tournees.pop(min(tournee1_idx, tournee2_idx))
                 
                 # Créer de nouvelles tournées avec l'algorithme du sac à dos
                 position_actuelle = self.probleme.depot
@@ -463,7 +460,7 @@ class AlgorithmeGenetique:
     
     def reparer_solution(self, solution: Solution) -> Solution:
         """Répare une solution en utilisant l'algorithme du sac à dos"""
-        # Collecter tous les clients
+        # Collecter tous les clients présents dans la solution
         tous_clients = []
         for tournee in solution.tournees:
             tous_clients.extend(tournee.clients)
@@ -478,7 +475,7 @@ class AlgorithmeGenetique:
         return nouvelle_solution
     
     def optimiser_ordre_tournee(self, tournee: Tournee):
-        """Optimise l'ordre des clients dans une tournée avec l'heuristique du plus proche voisin"""
+        """Optimise l'ordre des clients dans une tournée avec l'heuristique du plus proche voisin (en temps)"""
         if len(tournee.clients) <= 1:
             return
         
@@ -489,7 +486,7 @@ class AlgorithmeGenetique:
         position_courante = self.probleme.depot
         
         while clients_non_visites:
-            # Trouver le client non visité le plus proche
+            # Trouver le client non visité le plus proche (temps de trajet)
             client_le_plus_proche = min(
                 clients_non_visites,
                 key=lambda c: self.probleme.matrice_distances[position_courante][c.id]
@@ -560,8 +557,8 @@ class AlgorithmeGenetique:
             if len(solution_amelioree.tournees) >= 2:
                 self.optimiser_echanges_entre_tournees(solution_amelioree)
             
-            # 3. Équilibrage des tournées
-            if iterations == 1:  # Une seule fois pour éviter de boucler
+            # 3. Équilibrage des tournées (évite les tournées anormalement longues)
+            if iterations == 1:
                 solution_amelioree = self.reequilibrer_tournees(solution_amelioree)
             
             # Évaluer la solution améliorée
@@ -587,7 +584,7 @@ class AlgorithmeGenetique:
             amelioration = False
             
             for i in range(len(tournee.clients) - 2):
-                for j in range(i + 2, min(i + 10, len(tournee.clients))):  # Limiter la fenêtre pour plus de rapidité
+                for j in range(i + 2, min(i + 10, len(tournee.clients))):  # Fenêtre limitée pour la rapidité
                     if j - i == 1:
                         continue  # Pas besoin d'inverser des segments adjacents
                     
@@ -595,13 +592,13 @@ class AlgorithmeGenetique:
                     a, b = tournee.clients[i].id, tournee.clients[i+1].id
                     c, d = tournee.clients[j].id, tournee.clients[(j+1) % len(tournee.clients)].id if j < len(tournee.clients) - 1 else self.probleme.depot
                     
-                    # Distance actuelle
+                    # Coût actuel
                     dist_actuelle = (
                         self.probleme.matrice_distances[a][b] +
                         self.probleme.matrice_distances[c][d]
                     )
                     
-                    # Distance après échange
+                    # Coût après inversion
                     dist_nouvelle = (
                         self.probleme.matrice_distances[a][c] +
                         self.probleme.matrice_distances[b][d]
@@ -631,7 +628,7 @@ class AlgorithmeGenetique:
         # Utiliser un ensemble pour éviter de tester plusieurs fois les mêmes échanges
         echanges_testes = set()
         
-        while essais < max_essais:
+        while essais < max_essais and tournee1.clients and tournee2.clients:
             # Choisir deux clients aléatoires
             i = random.randint(0, len(tournee1.clients) - 1)
             j = random.randint(0, len(tournee2.clients) - 1)
@@ -669,20 +666,20 @@ class AlgorithmeGenetique:
                 
                 # Si l'échange n'améliore pas, annuler
                 if fitness_apres >= fitness_avant:
-                    tournee1.clients = list(tournee1.clients)  # Recréer une nouvelle liste
+                    tournee1.clients = list(tournee1.clients)
                     tournee2.clients = list(tournee2.clients)
                     self.optimiser_ordre_tournee(tournee1)
                     self.optimiser_ordre_tournee(tournee2)
     
     def reequilibrer_tournees(self, solution: Solution) -> Solution:
-        """Rééquilibre les tournées pour éviter des tournées trop longues"""
+        """Rééquilibre les tournées pour éviter des tournées trop longues (ex: > 4h)"""
         solution_clone = solution.clone()
         
         # Calculer le temps de chaque tournée
         temps_tournees = [self.calculer_temps_tournee(t) for t in solution_clone.tournees]
         
         # Si aucune tournée n'est trop longue, on ne fait rien
-        if max(temps_tournees) <= 240:  # 4 heures max
+        if not temps_tournees or max(temps_tournees) <= 240:  # 4 heures max
             return solution_clone
         
         # Identifier les tournées trop longues
@@ -713,7 +710,7 @@ class AlgorithmeGenetique:
                     
                     # Vérifier si le client peut être ajouté à cette tournée
                     if autre_tournee.charge_totale() + client.taille_commande <= self.probleme.capacite_vehicule:
-                        # Calculer le coût d'insertion
+                        # Calculer le coût d'insertion (depuis dernier point)
                         position_courante = self.probleme.depot if not autre_tournee.clients else autre_tournee.clients[-1].id
                         cout = self.probleme.matrice_distances[position_courante][client.id]
                         
@@ -753,6 +750,56 @@ class AlgorithmeGenetique:
             solution_clone = self.clients_to_solution_knapsack(tous_clients)
         
         return solution_clone
+
+    def verifier_solution(self, solution: Solution) -> Dict[str, List[str]]:
+        """
+        Vérifie quelques propriétés:
+        - Chaque client apparaît exactement une fois
+        - Aucune tournée ne dépasse la capacité
+        - Dépassement horaire (8h-18h)
+        Retourne un dict d'issues (vides si tout est OK)
+        """
+        issues = {"duplicates": [], "missing": [], "capacity": [], "time_window": []}
+        # Ensemble des clients attendus
+        attendus = {c.id for c in self.probleme.clients}
+        vus = []
+        for ti, tournee in enumerate(solution.tournees):
+            # capacité
+            if tournee.charge_totale() > self.probleme.capacite_vehicule + 1e-9:
+                issues["capacity"].append(f"Tournée {ti+1} dépasse la capacité")
+            # temps
+            position = self.probleme.depot
+            heure = self.probleme.heure_debut
+            for cl in tournee.clients:
+                heure += self.probleme.matrice_distances[position][cl.id]
+                heure += 10  # service
+                position = cl.id
+                vus.append(cl.id)
+            heure += self.probleme.matrice_distances[position][self.probleme.depot]
+            if heure > self.probleme.heure_fin + 1e-9:
+                dep_h = (heure - self.probleme.heure_fin)/60.0
+                issues["time_window"].append(f"Tournée {ti+1} dépasse l'horaire de {dep_h:.2f}h")
+        # unicité
+        from collections import Counter
+        cnt = Counter(vus)
+        duplicates = [str(cid) for cid, k in cnt.items() if k > 1]
+        if duplicates:
+            issues["duplicates"].append("Clients dupliqués: " + ", ".join(duplicates))
+        missing = [str(cid) for cid in sorted(attendus - set(vus))]
+        if missing:
+            issues["missing"].append("Clients manquants: " + ", ".join(missing))
+        return {k: v for k, v in issues.items() if v}
+
+    def reparer_integrite(self, solution: Solution) -> Solution:
+        """
+        Reconstruit une solution propre contenant chaque client exactement une fois,
+        en respectant la capacité, à partir de la liste de clients du problème.
+        """
+        solution_reparee = self.clients_to_solution_knapsack(self.probleme.clients)
+        for t in solution_reparee.tournees:
+            self.optimiser_ordre_tournee(t)
+        self.evaluer_fitness(solution_reparee)
+        return solution_reparee
     
     def executer(self):
         """Exécute l'algorithme génétique"""
@@ -831,6 +878,15 @@ class AlgorithmeGenetique:
         # Appliquer une dernière recherche locale à la meilleure solution
         self.meilleure_solution = self.recherche_locale(self.meilleure_solution)
         self.evaluer_fitness(self.meilleure_solution)
+
+        # Vérifications d'intégrité finales (unicité, capacité, fenêtre)
+        issues = self.verifier_solution(self.meilleure_solution)
+        if issues:
+            logging.warning(f"Vérifications: {issues}")
+            # Optionnel: on répare si manquants/duplicates détectés
+            if ("missing" in issues and issues["missing"]) or ("duplicates" in issues and issues["duplicates"]):
+                logging.info("Réparation d'intégrité de la solution finale...")
+                self.meilleure_solution = self.reparer_integrite(self.meilleure_solution)
         
         temps_execution = time.time() - temps_debut
         logging.info(f"Exécution terminée en {temps_execution:.2f} secondes")
