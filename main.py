@@ -7,6 +7,7 @@ from typing import List, Dict
 from models import Client, ProblemVRP, Tournee, Solution
 from genetic_algorithm import AlgorithmeGenetique
 
+# début main.py
 
 def generer_probleme_aleatoire(n_villes: int, capacite_vehicule: float = 100) -> ProblemVRP:
     """Génère un problème aléatoire de tournées de véhicules"""
