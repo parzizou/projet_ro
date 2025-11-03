@@ -94,4 +94,43 @@ def population_initiale(taille_population : int, commandes : list, camions : lis
     return population
 
 
+def genetic_algorithm(commandes : list, camions : list,
+                      taille_population : int = 100,
+                      generations : int = 100,
+                      taux_mutation : float = 0.1,
+                      taille_selection : int = 30) -> Solution:
+    # Générer la population initiale
+    population = population_initiale(taille_population, commandes, camions)
+
+    for gen in range(generations):
+       
+        
+        # Évaluer la fitness
+        population_fitness = [(sol, calculer_fitness(sol)) for sol in population]
+        population_fitness.sort(key=lambda x: x[1], reverse=True)
+
+        # Sélection
+        population_selectionnee = selection(population, taille_selection)
+
+        # Nouvelle génération
+        nouvelle_population = []
+
+        # Crossover
+        while len(nouvelle_population) < taille_population:
+            parents = random.sample(population_selectionnee, 2)
+            enfant = crossover(parents[0], parents[1])
+            # Mutation
+            enfant_muté = mutation(enfant, taux_mutation)
+            nouvelle_population.append(enfant_muté)
+
+        population = nouvelle_population
+        
+        print(f"Génération {gen+1}/{generations}")
+        # Afficher la meilleure solution de la génération
+        meilleure_solution = max(population, key=lambda sol: calculer_fitness(sol))
+        meilleure_solution.afficher_solution()
+
+    # Retourner la meilleure solution trouvée
+    meilleure_solution = max(population, key=lambda sol: calculer_fitness(sol))
+    return meilleure_solution
 
