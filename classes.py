@@ -1,4 +1,9 @@
+import math
 
+DEPOT_POS = (0.0, 0.0)
+
+def _dist(a, b):
+    return math.hypot(a[0] - b[0], a[1] - b[1])
 
 class Commande:
     def __init__(self, client,  pos, poid, taille_x, taille_y, taille_z):
@@ -20,53 +25,69 @@ class Solution:
     # cette classe represente une solution au probleme de livraison VRP ( Vehicle Routing Problem)
     # une solution est composee de plusieurs routes effectuees par des camions pour livrer des commandes a des clients
     def __init__(self, routes):
-        self.routes = routes # liste de routes, chaque route est une liste de tuples (camion, [commandes])
+        # routes: liste de tuples (camion, [commandes])
+        self.routes = routes
         
     def afficher_solution(self):
         # affiche la liste des routes de la solution
         # puis affiche le nombre total de camions utilises dans la solution
         # les unitées de distance totales parcourues par tous les camions
         total_camions = len(self.routes)
-        total_distance = 0
-        for route in self.routes:
+        total_distance = 0.0
+        for idx, route in enumerate(self.routes, start=1):
             camion, commandes = route
-            print(f"Camion (Capacite: {camion.capacite_poid}kg, {camion.capacite_taille_x}x{camion.capacite_taille_y}x{camion.capacite_taille_z}cm) livre les commandes:")
+            print(f"Route #{idx} — Camion (Capacité: {camion.capacite_poid}kg, "
+                  f"{camion.capacite_taille_x}x{camion.capacite_taille_y}x{camion.capacite_taille_z}cm)")
             for commande in commandes:
-                print(f"  Client: {commande.client}, Position: {commande.pos}, Items: {len(commande.items)}")
-            # Calcul de la distance totale parcourue par le camion (exemple simplifié)
-            distance = sum(((commande.pos[0] - camion.pos[0])**2 + (commande.pos[1] - camion.pos[1])**2)**0.5 for commande in commandes)
+                print(f"  - Client: {commande.client}, Position: {commande.pos}, Poids: {commande.poid}kg")
+            # Distance dépôt -> clients -> dépôt
+            distance = 0.0
+            cur = DEPOT_POS
+            for commande in commandes:
+                distance += _dist(cur, commande.pos)
+                cur = commande.pos
+            distance += _dist(cur, DEPOT_POS)
             total_distance += distance
             print(f"  Distance totale parcourue par ce camion: {distance:.2f} unités")
         print(f"\nNombre total de camions utilises: {total_camions}")
         print(f"Distance totale parcourue par tous les camions: {total_distance:.2f} unités")
         
         
-    def est_valide(self,nb_commandees) -> bool:
-        # verifie si la solution est valide en s'assurant que chaque commande est livree une seule fois, et que la capacité de chaque camion n'est pas depassee en terme de masse
-        commandes_livrees = set()
+    def est_valide(self, toutes_commandes=None) -> bool:
+        """
+        Verifie:
+        - chaque commande apparait au plus une fois (pas de doublon),
+        - la capacité de chaque camion n'est pas depassee en terme de masse,
+        - si toutes_commandes est fourni, la solution couvre exactement cet ensemble de commandes.
+        """
+        commandes_livrees = []
         for route in self.routes:
             camion, commandes = route
-            total_poid = 0
+            total_poid = 0.0
             for commande in commandes:
-                if commande in commandes_livrees:
-                    return False # commande deja livree
-                commandes_livrees.add(commande)
-                total_poid += sum(item.poid for item in commande.items)
+                commandes_livrees.append(commande)
+                total_poid += float(commande.poid)
             if total_poid > camion.capacite_poid:
-                return False # capacite de poids depassee
-        return len(commandes_livrees) == nb_commandees
+                return False  # capacite de poids depassee
+        # doublons ?
+        if len(commandes_livrees) != len(set(commandes_livrees)):
+            return False
+        if toutes_commandes is not None:
+            # couvrir exactement toutes les commandes demandées
+            return set(commandes_livrees) == set(toutes_commandes) and len(commandes_livrees) > 0
+        # sinon, simple validité structurelle
+        return True
     
 def calculer_fitness(solution : Solution) -> float:
-    # cette fonction calcule la fitness d'une solution
-    # la fitness est definie comme l'inverse de la distance totale parcourue par tous les camions dans la solution
-    # elle sert a evaluer la qualite d'une solution dans le cadre d'un algorithme genetique
-    # plus la distance totale est faible, plus la fitness est elevee
-    total_distance = 0
+    # Fitness = 1 / distance totale (dépôt -> tournées -> retour)
+    total_distance = 0.0
     for route in solution.routes:
         camion, commandes = route
-        distance = sum(((commande.pos[0] - camion.pos[0])**2 + (commande.pos[1] - camion.pos[1])**2)**0.5 for commande in commandes)
-        total_distance += distance
+        cur = DEPOT_POS
+        for commande in commandes:
+            total_distance += _dist(cur, commande.pos)
+            cur = commande.pos
+        total_distance += _dist(cur, DEPOT_POS)
     if total_distance == 0:
-        return float('inf') # eviter la division par zero
-    return 1 / total_distance
-
+        return 0.0
+    return 1.0 / total_distance
