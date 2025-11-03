@@ -156,18 +156,21 @@ def main():
     solution.afficher_solution()
     # Affichage graphique
     # afficher chaque route avec une couleur différente
-    # ne pas afficher les routes vers le depot
+    # NE PAS tracer les segments vers/depuis le dépôt pour éviter l'amas de lignes
     plt.figure(figsize=(10, 8))
     couleurs = plt.cm.get_cmap('tab20', len(solution.routes))
     for idx, route in enumerate(solution.routes):
         camion, commandes_route = route
         if not commandes_route:
             continue
-        xs = [vrp_classes.DEPOT_POS[0]] + [cmd.pos[0] for cmd in commandes_route] + [vrp_classes.DEPOT_POS[0]]
-        ys = [vrp_classes.DEPOT_POS[1]] + [cmd.pos[1] for cmd in commandes_route] + [vrp_classes.DEPOT_POS[1]]
-        plt.plot(xs, ys, marker='o', color=couleurs(idx), label=f'Route #{idx+1}')
+        # Tracer uniquement les segments entre clients, sans le dépôt
+        xs = [cmd.pos[0] for cmd in commandes_route]
+        ys = [cmd.pos[1] for cmd in commandes_route]
+        # Si une seule commande, on verra juste le point (pas de segment vers le dépôt)
+        plt.plot(xs, ys, marker='o', linestyle='-', color=couleurs(idx), label=f'Route #{idx+1}')
+    # Afficher le dépôt uniquement comme repère
     plt.scatter([vrp_classes.DEPOT_POS[0]], [vrp_classes.DEPOT_POS[1]], color='red', s=100, label='Dépôt')
-    plt.title('Routes de Livraison')
+    plt.title('Routes de Livraison (sans segments vers le dépôt)')
     plt.xlabel('X')
     plt.ylabel('Y')
     plt.legend()
@@ -176,6 +179,3 @@ def main():
     
 if __name__ == "__main__":
     main()
-    
-        
-    

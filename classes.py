@@ -13,6 +13,9 @@ class Commande:
         self.taille_x = taille_x
         self.taille_y = taille_y
         self.taille_z = taille_z
+
+    def __repr__(self):
+        return f"Commande(client={self.client}, pos={self.pos}, poid={self.poid})"
     
 class Camion:
     def __init__(self, capacite_poid, capacite_taille_x, capacite_taille_y, capacite_taille_z):
@@ -20,6 +23,10 @@ class Camion:
         self.capacite_taille_x = capacite_taille_x
         self.capacite_taille_y = capacite_taille_y
         self.capacite_taille_z = capacite_taille_z
+
+    def __repr__(self):
+        return (f"Camion(cap_poid={self.capacite_poid}, "
+                f"{self.capacite_taille_x}x{self.capacite_taille_y}x{self.capacite_taille_z})")
         
 class Solution:
     # cette classe represente une solution au probleme de livraison VRP ( Vehicle Routing Problem)
@@ -58,28 +65,48 @@ class Solution:
         Verifie:
         - chaque commande apparait au plus une fois (pas de doublon),
         - la capacité de chaque camion n'est pas depassee en terme de masse,
+        - un camion n'est pas utilisé dans plusieurs routes,
         - si toutes_commandes est fourni, la solution couvre exactement cet ensemble de commandes.
         """
         commandes_livrees = []
+        camions_utilises = []
+
         for route in self.routes:
             camion, commandes = route
+            camions_utilises.append(camion)
+
             total_poid = 0.0
             for commande in commandes:
                 commandes_livrees.append(commande)
                 total_poid += float(commande.poid)
-            if total_poid > camion.capacite_poid:
+            if total_poid > camion.capacite_poid + 1e-9:
                 return False  # capacite de poids depassee
-        # doublons ?
+
+        # doublons de commandes ?
         if len(commandes_livrees) != len(set(commandes_livrees)):
             return False
+
+        # un camion ne doit pas servir plusieurs routes (unicité des camions par route)
+        if len(camions_utilises) != len(set(camions_utilises)):
+            return False
+
         if toutes_commandes is not None:
-            # couvrir exactement toutes les commandes demandées
+            # couvrir exactement toutes les commandes demandées (même instances)
             return set(commandes_livrees) == set(toutes_commandes) and len(commandes_livrees) > 0
+
         # sinon, simple validité structurelle
         return True
     
-def calculer_fitness(solution : Solution) -> float:
-    # Fitness = 1 / distance totale (dépôt -> tournées -> retour)
+def calculer_fitness(solution: Solution, toutes_commandes=None) -> float:
+    """
+    Fitness basée sur la distance totale.
+    - Si la solution n'est pas valide (au sens de toutes_commandes), fitness = 0.
+    - Sinon fitness = 1 / (epsilon + distance_totale).
+    """
+    if toutes_commandes is not None:
+        if not solution.est_valide(toutes_commandes=toutes_commandes):
+            return 0.0
+
     total_distance = 0.0
     for route in solution.routes:
         camion, commandes = route
@@ -88,6 +115,6 @@ def calculer_fitness(solution : Solution) -> float:
             total_distance += _dist(cur, commande.pos)
             cur = commande.pos
         total_distance += _dist(cur, DEPOT_POS)
-    if total_distance == 0:
-        return 0.0
-    return 1.0 / total_distance
+
+    # éviter division par zéro
+    return 1.0 / (1e-9 + total_distance)
