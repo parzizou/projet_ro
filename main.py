@@ -150,7 +150,7 @@ def main():
     commandes, camions = importer_data("data.vrp")
     solution = genetic_algorithm(commandes, camions,
                                  taille_population=100,
-                                    generations=200,
+                                    generations=500,
                                     taux_mutation=0.1,
                                     taille_selection=30)
     solution.afficher_solution()
