@@ -167,18 +167,18 @@ def _stats(pop: List[Individual]) -> Tuple[int, float]:
 
 def genetic_algorithm(
     inst: CVRPInstance,
-    pop_size: int = 110,
+    pop_size: int = 50,
     generations: int = 100000,
     tournament_k: int = 4,      
     elitism: int = 4,          
-    pc: float = 0.95, # crossover probability
-    pm: float = 0.25, # mutation probability
+    pc: float = 0.50, # crossover probability
+    pm: float = 0.30, # mutation probability
     seed: int | None = 1,
     use_2opt: bool = True,
     verbose: bool = True,
     log_interval: int = 10,
     two_opt_prob: float = 0.35,  
-    time_limit_sec: float = 170.0,  # ~<3 min par défaut
+    time_limit_sec: float = 20000.0,  # limite de temps en secondes (0 = pas de limite)
     target_optimum: int | None = None,  # valeur optimale connue (pour gap%)
     stop_on_file: str | None = None,    # chemin d'un fichier sentinelle pour arrêt propre
 ) -> Individual:

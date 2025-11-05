@@ -17,11 +17,11 @@ from ga import genetic_algorithm
 from solution import verify_solution, solution_total_cost, write_solution_text
 
 # Chemin par défaut du fichier .vrp
-pathfile = "data.vrp"
+pathfile = "data4.vrp"
 
 # NOUVELLES OPTIONS (sans argparse): à éditer ici
 # - valeur optimale cible pour afficher le gap (%) dans les logs et le résumé
-TARGET_OPTIMUM: int | None = 21220
+TARGET_OPTIMUM: int | None = 72355
 # - fichier sentinelle: s'il existe pendant l'exécution, l'algo s'arrête proprement
 STOP_SENTINEL_FILE: str | None = None  # ex: "stop.flag"
 
