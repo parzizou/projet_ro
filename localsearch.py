@@ -2,6 +2,10 @@
 """
 localsearch.py
 2-opt intra-route pour améliorer une route (sans changer l'affectation des clients aux autres tournées).
+
+Optimisation:
+- Calcul de delta-coût O(1) pour chaque mouvement 2-opt
+- Application in-place des inversions, "first improvement" avec redémarrage
 """
 
 from __future__ import annotations
@@ -24,33 +28,60 @@ def route_cost_with_depot(route: List[int], inst: CVRPInstance) -> int:
     return cost
 
 
+def _two_opt_delta(route: List[int], i: int, j: int, inst: CVRPInstance) -> int:
+    """
+    Delta de coût pour inversion du segment [i..j] (inclus), avec retour au dépôt implicite.
+    Delta = (a-c) + (b-d) - (a-b) - (c-d) où
+      a = route[i-1] ou dépôt si i==0
+      b = route[i]
+      c = route[j]
+      d = route[j+1] ou dépôt si j==len(route)-1
+    Retourne un entier (peut être négatif si amélioration).
+    """
+    dmat = inst.dist
+    depot = inst.depot_index
+    n = len(route)
+
+    a = depot if i == 0 else route[i - 1]
+    b = route[i]
+    c = route[j]
+    d = depot if j == n - 1 else route[j + 1]
+
+    before = dmat[a][b] + dmat[c][d]
+    after = dmat[a][c] + dmat[b][d]
+    return after - before
+
+
 def two_opt_route(route: List[int], inst: CVRPInstance) -> List[int]:
     """
-    2-opt simple intra-route. Essaie d'améliorer tant qu'on trouve mieux.
-    Retourne potentiellement une nouvelle liste (optimisée).
+    2-opt rapide intra-route. First-improvement:
+    - on parcourt des paires (i, j)
+    - si delta < 0, on applique l'inversion in-place, on met à jour le coût courant et on redémarre
     """
-    if len(route) < 4:
+    n = len(route)
+    if n < 4:
         return route[:]  # trop court pour 2-opt utile
 
-    best = route[:]
-    best_cost = route_cost_with_depot(best, inst)
-    improved = True
+    r = route[:]  # on travaille sur une copie
+    best_cost = route_cost_with_depot(r, inst)
 
+    improved = True
     while improved:
         improved = False
-        # On teste toutes les paires (i, j) avec i < j
-        for i in range(0, len(best) - 2):
-            for j in range(i + 1, len(best) - 1):
-                # inversion du segment (i..j)
-                new_route = best[:i] + best[i:j + 1][::-1] + best[j + 1:]
-                new_cost = route_cost_with_depot(new_route, inst)
-                if new_cost < best_cost:
-                    best = new_route
-                    best_cost = new_cost
+        # Parcours des paires; on peut éviter j = i (inutile)
+        for i in range(0, n - 2):
+            ai = r[i]
+            for j in range(i + 1, n - 1):
+                # Éviter les inversions adjacentes strictes qui apportent rarement un gain
+                # (le delta les gère de toute façon)
+                delta = _two_opt_delta(r, i, j, inst)
+                if delta < 0:
+                    # Appliquer l'inversion in-place
+                    r[i : j + 1] = reversed(r[i : j + 1])
+                    best_cost += delta
                     improved = True
-                    # restart recherche locale à partir de cette meilleure solution
                     break
             if improved:
                 break
 
-    return best
+    return r

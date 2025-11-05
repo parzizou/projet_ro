@@ -7,6 +7,10 @@ Algorithme génétique pour le CVRP:
 - 2-opt intra-route optionnel (probabiliste pour gagner du temps)
 - Sélection par tournoi, crossover OX, mutation swap/inversion
 - Limite de temps pour garantir < ~3 minutes par défaut
+
+Améliorations:
+- Arrêt propre à la demande (Ctrl+C ou fichier sentinelle)
+- Affichage du gap (%) si une valeur optimale cible est fournie
 """
 
 from __future__ import annotations
@@ -14,6 +18,7 @@ from dataclasses import dataclass
 from typing import List, Tuple
 import random
 import time
+import os
 
 from cvrp_data import CVRPInstance
 from split import split_giant_tour
@@ -163,7 +168,7 @@ def _stats(pop: List[Individual]) -> Tuple[int, float]:
 def genetic_algorithm(
     inst: CVRPInstance,
     pop_size: int = 110,
-    generations: int = 5000,   
+    generations: int = 100000,
     tournament_k: int = 4,      
     elitism: int = 4,          
     pc: float = 0.95, # crossover probability
@@ -174,12 +179,24 @@ def genetic_algorithm(
     log_interval: int = 10,
     two_opt_prob: float = 0.35,  
     time_limit_sec: float = 170.0,  # ~<3 min par défaut
+    target_optimum: int | None = None,  # valeur optimale connue (pour gap%)
+    stop_on_file: str | None = None,    # chemin d'un fichier sentinelle pour arrêt propre
 ) -> Individual:
     """
     Boucle principale du GA. Retourne le meilleur individu trouvé.
     Respecte une limite de temps si spécifiée (time_limit_sec > 0).
+    S'arrête proprement si:
+      - Ctrl+C (KeyboardInterrupt)
+      - stop_on_file est fourni et existe.
+    Si target_optimum est fourni, affiche le gap (%) dans les logs.
     """
     rng = random.Random(seed)
+
+    def fmt_gap(cost: int) -> str:
+        if target_optimum is None or target_optimum <= 0:
+            return ""
+        gap = 100.0 * (cost - target_optimum) / target_optimum
+        return f" | gap={gap:.2f}% (opt={target_optimum})"
 
     start_time = time.time()
     pop = make_initial_population(inst, pop_size, rng, use_2opt, verbose=verbose, init_two_opt_prob=0.5)
@@ -188,69 +205,89 @@ def genetic_algorithm(
 
     if verbose:
         bcost, avg = _stats(pop)
-        print(f"[GA] Départ: best={bcost:.0f} | avg={avg:.0f} | #routes_best={len(best.routes)}", flush=True)
+        print(f"[GA] Départ: best={bcost:.0f} | avg={avg:.0f} | #routes_best={len(best.routes)}{fmt_gap(bcost)}", flush=True)
 
-    for gen in range(1, generations + 1):
-        # Time limit
-        if time_limit_sec and (time.time() - start_time) >= time_limit_sec:
-            if verbose:
-                print(f"[GA] Time limit atteinte ({time_limit_sec:.1f}s). Arrêt anticipé à gen {gen-1}.", flush=True)
-            break
+    stopped_by = None  # "time", "file", "keyboard", or None
 
-        new_pop: List[Individual] = []
+    try:
+        for gen in range(1, generations + 1):
+            # Time limit
+            if time_limit_sec and (time.time() - start_time) >= time_limit_sec:
+                stopped_by = "time"
+                if verbose:
+                    print(f"[GA] Time limit atteinte ({time_limit_sec:.1f}s). Arrêt anticipé à gen {gen-1}.", flush=True)
+                break
 
-        # Élitisme
-        elites = pop[:elitism]
-        new_pop.extend(elites)
+            # Stop-on-file
+            if stop_on_file and os.path.exists(stop_on_file):
+                stopped_by = "file"
+                if verbose:
+                    print(f"[GA] Fichier sentinelle détecté ({stop_on_file}). Arrêt propre à gen {gen-1}.", flush=True)
+                break
 
-        # Reproduction
-        while len(new_pop) < pop_size:
-            p1 = tournament_select(pop, tournament_k, rng)
-            p2 = tournament_select(pop, tournament_k, rng)
+            new_pop: List[Individual] = []
 
-            # Crossover
-            if rng.random() < pc:
-                c1_perm, c2_perm = order_crossover(p1.perm, p2.perm, rng)
-            else:
-                c1_perm, c2_perm = p1.perm[:], p2.perm[:]
+            # Élitisme
+            elites = pop[:elitism]
+            new_pop.extend(elites)
 
-            # Mutation
-            if rng.random() < pm:
-                if rng.random() < 0.5:
-                    mutate_swap(c1_perm, rng)
+            # Reproduction
+            while len(new_pop) < pop_size:
+                p1 = tournament_select(pop, tournament_k, rng)
+                p2 = tournament_select(pop, tournament_k, rng)
+
+                # Crossover
+                if rng.random() < pc:
+                    c1_perm, c2_perm = order_crossover(p1.perm, p2.perm, rng)
                 else:
-                    mutate_inversion(c1_perm, rng)
-            if rng.random() < pm:
-                if rng.random() < 0.5:
-                    mutate_swap(c2_perm, rng)
-                else:
-                    mutate_inversion(c2_perm, rng)
+                    c1_perm, c2_perm = p1.perm[:], p2.perm[:]
 
-            # Évaluation
-            c1_routes, c1_cost = evaluate_perm(c1_perm, inst, rng, use_2opt, two_opt_prob=two_opt_prob)
-            c2_routes, c2_cost = evaluate_perm(c2_perm, inst, rng, use_2opt, two_opt_prob=two_opt_prob)
+                # Mutation
+                if rng.random() < pm:
+                    if rng.random() < 0.5:
+                        mutate_swap(c1_perm, rng)
+                    else:
+                        mutate_inversion(c1_perm, rng)
+                if rng.random() < pm:
+                    if rng.random() < 0.5:
+                        mutate_swap(c2_perm, rng)
+                    else:
+                        mutate_inversion(c2_perm, rng)
 
-            new_pop.append(Individual(c1_perm, c1_routes, c1_cost))
-            if len(new_pop) < pop_size:
-                new_pop.append(Individual(c2_perm, c2_routes, c2_cost))
+                # Évaluation
+                c1_routes, c1_cost = evaluate_perm(c1_perm, inst, rng, use_2opt, two_opt_prob=two_opt_prob)
+                c2_routes, c2_cost = evaluate_perm(c2_perm, inst, rng, use_2opt, two_opt_prob=two_opt_prob)
 
-        pop = new_pop
-        pop.sort(key=lambda ind: ind.cost)
-        if pop[0].cost < best.cost:
-            best = pop[0]
+                new_pop.append(Individual(c1_perm, c1_routes, c1_cost))
+                if len(new_pop) < pop_size:
+                    new_pop.append(Individual(c2_perm, c2_routes, c2_cost))
 
-        if verbose and (gen % max(1, log_interval) == 0 or gen == 1):
+            pop = new_pop
+            pop.sort(key=lambda ind: ind.cost)
+            if pop[0].cost < best.cost:
+                best = pop[0]
+
+            if verbose and (gen % max(1, log_interval) == 0 or gen == 1):
+                elapsed = time.time() - start_time
+                eta = (elapsed / gen) * (generations - gen) if gen > 0 else 0.0
+                bcost, avg = _stats(pop)
+                print(
+                    f"[GA] Gen {gen}/{generations} | best={bcost:.0f} | avg={avg:.0f} | #routes_best={len(best.routes)}"
+                    f"{fmt_gap(bcost)} | t+{elapsed:.1f}s | ETA~{eta:.1f}s",
+                    flush=True,
+                )
+    except KeyboardInterrupt:
+        stopped_by = "keyboard"
+        if verbose:
             elapsed = time.time() - start_time
-            eta = (elapsed / gen) * (generations - gen) if gen > 0 else 0.0
-            bcost, avg = _stats(pop)
-            print(
-                f"[GA] Gen {gen}/{generations} | best={bcost:.0f} | avg={avg:.0f} | #routes_best={len(best.routes)} | "
-                f"t+{elapsed:.1f}s | ETA~{eta:.1f}s",
-                flush=True,
-            )
+            print(f"\n[GA] Interruption utilisateur (Ctrl+C). Arrêt propre. t+{elapsed:.1f}s", flush=True)
 
     if verbose:
         total_elapsed = time.time() - start_time
-        print(f"[GA] Terminé en {total_elapsed:.1f}s. Best cost={best.cost} | #routes={len(best.routes)}", flush=True)
+        reason = {"time": "limite de temps", "file": "fichier sentinelle", "keyboard": "Ctrl+C", None: "fin normale"}[stopped_by]
+        print(
+            f"[GA] Terminé ({reason}) en {total_elapsed:.1f}s. Best cost={best.cost} | #routes={len(best.routes)}{fmt_gap(best.cost)}",
+            flush=True,
+        )
 
     return best

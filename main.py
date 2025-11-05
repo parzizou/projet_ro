@@ -16,9 +16,14 @@ from cvrp_data import load_cvrp_instance, CVRPInstance
 from ga import genetic_algorithm
 from solution import verify_solution, solution_total_cost, write_solution_text
 
+# Chemin par défaut du fichier .vrp
+pathfile = "data.vrp"
 
-pathfile = "data2.vrp"
-
+# NOUVELLES OPTIONS (sans argparse): à éditer ici
+# - valeur optimale cible pour afficher le gap (%) dans les logs et le résumé
+TARGET_OPTIMUM: int | None = 21220
+# - fichier sentinelle: s'il existe pendant l'exécution, l'algo s'arrête proprement
+STOP_SENTINEL_FILE: str | None = None  # ex: "stop.flag"
 
 
 def resolve_instance_path(cli_value: str | None) -> str | None:
@@ -107,12 +112,21 @@ def main():
     print(f"[Run] Chargement: {instance_path}")
     inst: CVRPInstance = load_cvrp_instance(instance_path)
     print(f"[Run] Instance: {inst.name} | N={inst.dimension} | Capacité={inst.capacity}")
+    if TARGET_OPTIMUM is not None and TARGET_OPTIMUM <= 0:
+        print("[Warn] TARGET_OPTIMUM doit être > 0 pour un calcul de gap utile.", flush=True)
+    if STOP_SENTINEL_FILE:
+        print(f"[Run] Arrêt possible par fichier sentinelle: crée '{STOP_SENTINEL_FILE}' pour stopper proprement.", flush=True)
+    print("[Run] Astuce: Ctrl+C pour arrêter proprement et garder le meilleur courant.", flush=True)
 
     # Mapping IDs originaux pour écrire une solution lisible
     original_id_from_index, _ = build_original_id_mapping(inst, instance_path)
 
-    # Exécute le GA avec ses paramètres par défaut (cf. ga.genetic_algorithm)
-    best = genetic_algorithm(inst)
+    # Exécute le GA (arrêt possible par Ctrl+C ou fichier sentinelle)
+    best = genetic_algorithm(
+        inst,
+        target_optimum=TARGET_OPTIMUM,
+        stop_on_file=STOP_SENTINEL_FILE,
+    )
 
     # Vérification + affichage
     is_ok, msgs = verify_solution(best.routes, inst)
@@ -121,6 +135,9 @@ def main():
 
     print("\n=== Résultat ===")
     print(f"Coût total: {total}")
+    if TARGET_OPTIMUM and TARGET_OPTIMUM > 0:
+        gap = 100.0 * (total - TARGET_OPTIMUM) / TARGET_OPTIMUM
+        print(f"Gap vs optimal ({TARGET_OPTIMUM}): {gap:.2f}%")
     print(f"Nombre de véhicules: {nb_veh}")
     print(f"Contraintes OK: {is_ok}")
     if not is_ok:
