@@ -23,7 +23,7 @@ Points importants:
 - `plot.py` — Affichage des tournées trouvées (optionnel, nécessite `matplotlib`).
 - `main.py` — Petit lanceur: charge une instance, exécute l’algo, vérifie et écrit la solution, et affiche le tracé.
 
-## Comment l’algo fonctionne (sans jargon)
+## Comment l’algo fonctionne 
 
 L’algorithme génétique est une méthode inspirée de l’évolution:
 on manipule une population de solutions, on “reproduit” les meilleures, on mélange, on mute, et on garde ce qui marche le mieux.

@@ -162,17 +162,17 @@ def _stats(pop: List[Individual]) -> Tuple[int, float]:
 
 def genetic_algorithm(
     inst: CVRPInstance,
-    pop_size: int = 110,         # ajusté
-    generations: int = 5000,     # élevé mais la time-limit arrêtera avant
-    tournament_k: int = 4,       # un peu plus sélectif
-    elitism: int = 4,            # plus d'élites
-    pc: float = 0.95,            # plus de crossover
-    pm: float = 0.25,            # un peu plus de mutation
+    pop_size: int = 110,
+    generations: int = 5000,   
+    tournament_k: int = 4,      
+    elitism: int = 4,          
+    pc: float = 0.95, # crossover probability
+    pm: float = 0.25, # mutation probability
     seed: int | None = 1,
     use_2opt: bool = True,
     verbose: bool = True,
     log_interval: int = 10,
-    two_opt_prob: float = 0.35,  # 2-opt probabiliste pendant l'évolution
+    two_opt_prob: float = 0.35,  
     time_limit_sec: float = 170.0,  # ~<3 min par défaut
 ) -> Individual:
     """

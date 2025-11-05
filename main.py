@@ -17,7 +17,7 @@ from ga import genetic_algorithm
 from solution import verify_solution, solution_total_cost, write_solution_text
 
 
-pathfile = "data3.vrp"
+pathfile = "data2.vrp"
 
 
 
