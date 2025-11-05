@@ -16,39 +16,49 @@ Points importants:
   - demandes des clients
   - capacité des véhicules
   - matrice de distances (euclidienne arrondie à la manière TSPLIB)
+  - Nouveau: `load_cvrp_from_vrplib(name)` pour charger directement une instance par son nom depuis le package Python `vrplib`, et récupérer le best-known cost si disponible.
 - `split.py` — Découpe une “grande tournée” en plusieurs tournées faisables (respect de la capacité) via une programmation dynamique.
 - `localsearch.py` — Amélioration locale “par inversion de segments” à l’intérieur d’une tournée (souvent appelée 2-opt).
 - `solution.py` — Calcul du coût d’une solution, vérification des contraintes, lecture/écriture de solutions texte.
 - `ga.py` — Le cœur de l’algorithme génétique: population, sélection, croisement, mutation, évaluation, élitisme, limite de temps.
 - `plot.py` — Affichage des tournées trouvées (optionnel, nécessite `matplotlib`).
-- `main.py` — Petit lanceur: charge une instance, exécute l’algo, vérifie et écrit la solution, et affiche le tracé.
+- `main.py` — Petit lanceur: charge une instance (par chemin local ou par nom CVRPLIB), exécute l’algo, vérifie et écrit la solution, et affiche le tracé.
 
 ## Nouveautés
 
 - Arrêt propre à la demande:
   - Appuie sur Ctrl+C pendant l’exécution: l’algo s’arrête proprement et garde le meilleur individu courant.
-  - Option `--stop-file chemin/flag.txt`: si ce fichier existe, l’algo stoppe proprement à la fin de la génération.
+  - Option `STOP_SENTINEL_FILE` dans `main.py`: si ce fichier existe, l’algo stoppe proprement à la fin de la génération.
 - Gap vs optimal:
-  - Passe `--optimum 12345` si tu connais la valeur optimale; on affiche le gap (%) dans les logs et dans le résumé final.
+  - Variable `TARGET_OPTIMUM` dans `main.py`. Lors d’un chargement par nom CVRPLIB (`--name`), si une solution de référence est disponible via `vrplib`, la valeur est automatiquement mise à jour avec le best-known cost.
+- Chargement direct par nom CVRPLIB:
+  - Utilise le package `vrplib` pour télécharger/charger les instances et, si possible, la solution de référence.
+  - Permet d’appeler: `python main.py --name A-n32-k5`
 
 ## Lancer le programme
 
 Prérequis:
 - Python 3.10 ou plus
 - Optionnel pour l’affichage: `pip install matplotlib`
+- Optionnel pour le chargement par nom CVRPLIB: `pip install vrplib`
 
-Exécution:
-- Place un fichier `.vrp` (format CVRPLIB) quelque part.
-- Lance:
+Exécutions possibles:
+- Avec un fichier `.vrp` local:
 ```
-python main.py --instance /chemin/vers/mon_instance.vrp --optimum 123456 --stop-file stop.flag
+python main.py --instance /chemin/vers/mon_instance.vrp
 ```
-- Tu peux créer le fichier `stop.flag` quand tu veux (ex: `touch stop.flag`) pour stopper proprement.
-- Appuie sur Ctrl+C à tout moment pour obtenir directement les résultats courants.
+- Directement par le nom d’une instance CVRPLIB (ex: A-n32-k5):
+```
+pip install vrplib
+python main.py --name A-n32-k5
+```
+Dans ce second cas:
+- L’instance est récupérée via `vrplib`.
+- Si `vrplib` expose une solution de référence, le best-known cost est automatiquement utilisé pour calculer le gap.
 
 Sorties:
 - Affiche le coût total, le nombre de véhicules (nombre de tournées), et la validité des contraintes.
-- Si `--optimum` est fourni: affiche aussi `Gap vs optimal: X.YZ%`.
+- Si une valeur optimale est connue (`TARGET_OPTIMUM` non nulle): affiche aussi `Gap vs optimal: X.YZ%`.
 - Écrit un fichier solution texte: `solution_<nom_instance>.sol`
 - Si `matplotlib` est dispo, sauvegarde une image: `solution_<nom_instance>.png`
 
@@ -60,6 +70,6 @@ Dans `ga.py`, la fonction `genetic_algorithm(...)` contient les réglages princi
 - Probabilités de croisement et de mutation
 - Activation et probabilité de l’amélioration locale
 - Limite de temps (par défaut 170 secondes)
-- Nouvelle option `target_optimum` (affichage gap), et `stop_on_file` (arrêt propre via fichier sentinelle)
+- Option `target_optimum` (affichage gap), et `stop_on_file` (arrêt propre via fichier sentinelle)
 
 Besoin d’aide pour intégrer des fenêtres de temps ou booster les perfs ? Dis-moi, on itère.

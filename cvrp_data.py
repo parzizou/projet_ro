@@ -5,11 +5,15 @@ Parseur CVRPLIB pour instances CVRP (format TSPLIB-like).
 Génère une instance prête à l'emploi: coordonnées, demandes, capacité, dépôt, matrice de distances.
 
 Fonction principale: load_cvrp_instance(path)
+
+Ajout:
+- load_cvrp_from_vrplib(name): charge une instance directement depuis le package Python 'vrplib'
+  et retourne (instance, mapping index->id_original, best_known_cost|None).
 """
 
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import List, Tuple, Dict
+from typing import List, Tuple, Dict, Optional
 import math
 import re
 
@@ -182,3 +186,146 @@ def load_cvrp_instance(path: str) -> CVRPInstance:
         dist=dist,
     )
     return instance
+
+
+# ===================== Intégration VRPLIB (optionnelle) =====================
+
+def _routes_cost_internal(routes: List[List[int]], inst: CVRPInstance) -> int:
+    """Coût total (incluant départ/retour dépôt) pour une liste de routes en indices internes."""
+    d = inst.dist
+    dep = inst.depot_index
+    total = 0
+    for r in routes:
+        if not r:
+            continue
+        total += d[dep][r[0]]
+        for i in range(len(r) - 1):
+            total += d[r[i]][r[i + 1]]
+        total += d[r[-1]][dep]
+    return total
+
+
+def load_cvrp_from_vrplib(name: str) -> Tuple[CVRPInstance, List[int], Optional[int]]:
+    """
+    Charge une instance CVRPLIB via le package 'vrplib' (pip install vrplib).
+
+    Retourne:
+      - inst: CVRPInstance
+      - original_id_from_index: liste telle que original_id_from_index[i] = id_original (1-based) du noeud i
+      - best_known_cost: int si la solution de référence est dispo, sinon None
+
+    Remarques:
+      - Nécessite le package 'vrplib'. Si absent, on lève un ImportError clair.
+      - On se base sur des clés usuelles de 'vrplib' (node_coord, demand, depot, capacity).
+      - On reconstruit la matrice EUC_2D arrondie à la TSPLIB (comme ailleurs dans ce projet).
+    """
+    try:
+        import vrplib  # type: ignore
+    except Exception as e:
+        raise ImportError(
+            "Le chargement par nom d'instance nécessite le package 'vrplib'. "
+            "Installe-le avec: pip install vrplib"
+        ) from e
+
+    data = vrplib.read_instance(name)  # type: ignore[attr-defined]
+
+    # Coords par id (id originaux, souvent 1-based)
+    coords_by_id: Dict[int, Tuple[float, float]] = {}
+    if isinstance(data, dict) and "node_coord" in data:
+        nc = data["node_coord"]
+        # nc peut être dict {id: (x, y)} ou list; on normalise en dict[int]->(float, float)
+        if isinstance(nc, dict):
+            for k, v in nc.items():
+                coords_by_id[int(k)] = (float(v[0]), float(v[1]))
+        else:
+            # si list/tuple, on suppose indexation 1-based en positions
+            for i, v in enumerate(nc, start=1):
+                coords_by_id[i] = (float(v[0]), float(v[1]))
+    else:
+        raise ValueError("Format instance vrplib inattendu: clé 'node_coord' absente.")
+
+    # Demandes par id
+    demands_by_id: Dict[int, int] = {}
+    dem = data.get("demand", None)
+    if isinstance(dem, dict):
+        for k, v in dem.items():
+            demands_by_id[int(k)] = int(v)
+    elif isinstance(dem, (list, tuple)):
+        for i, v in enumerate(dem, start=1):
+            # Certains jeux incluent depot avec 0, c'est ok.
+            demands_by_id[i] = int(v)
+    else:
+        raise ValueError("Format instance vrplib inattendu: clé 'demand' absente/inconnue.")
+
+    # Dépôt (int ou list)
+    depot_field = data.get("depot", None)
+    if depot_field is None:
+        raise ValueError("Format instance vrplib inattendu: clé 'depot' absente.")
+    if isinstance(depot_field, (list, tuple)):
+        depot_id = int(depot_field[0])
+    else:
+        depot_id = int(depot_field)
+
+    capacity = int(data.get("capacity", 0))
+    if capacity <= 0:
+        raise ValueError("Capacité invalide dans l'instance vrplib.")
+
+    # Mapping interne: dépôt à 0, puis autres ids triés
+    all_ids = sorted(coords_by_id.keys())
+    if depot_id not in all_ids:
+        raise ValueError("Depot id non trouvé dans l'instance vrplib.")
+    other_ids = [i for i in all_ids if i != depot_id]
+    ordered_ids = [depot_id] + other_ids
+    index_of_id = {oid: idx for idx, oid in enumerate(ordered_ids)}
+
+    # Construire arrays internes
+    coords: List[Tuple[float, float]] = [None] * len(ordered_ids)  # type: ignore
+    demands: List[int] = [0] * len(ordered_ids)
+    for oid in ordered_ids:
+        idx = index_of_id[oid]
+        coords[idx] = coords_by_id[oid]
+        demands[idx] = 0 if oid == depot_id else int(demands_by_id.get(oid, 0))
+
+    dist = _build_dist_matrix(coords)
+
+    inst = CVRPInstance(
+        name=str(data.get("name", name)),
+        dimension=len(ordered_ids),
+        capacity=capacity,
+        depot_index=0,
+        coords=coords,
+        demands=demands,
+        dist=dist,
+    )
+
+    # Meilleure solution connue (si dispo)
+    best_known_cost: Optional[int] = None
+    try:
+        sol = vrplib.read_solution(name)  # type: ignore[attr-defined]
+        if isinstance(sol, dict):
+            # Si la solution contient déjà un coût, on tente de l'utiliser
+            for key in ("cost", "objective", "obj", "best_known_cost"):
+                if key in sol and sol[key] is not None:
+                    try:
+                        best_known_cost = int(sol[key])
+                        break
+                    except Exception:
+                        pass
+            if best_known_cost is None:
+                # Recalcul du coût localement depuis les routes
+                routes_ids = sol.get("routes") or sol.get("route") or sol.get("tours")
+                if routes_ids:
+                    routes_internal: List[List[int]] = []
+                    for r in routes_ids:
+                        try:
+                            routes_internal.append([index_of_id[int(oid)] for oid in r if int(oid) in index_of_id])
+                        except Exception:
+                            continue
+                    if routes_internal:
+                        best_known_cost = _routes_cost_internal(routes_internal, inst)
+    except Exception:
+        # Pas de solution dispo, on ignore
+        best_known_cost = None
+
+    original_id_from_index = ordered_ids[:]  # mapping index interne -> id original
+    return inst, original_id_from_index, best_known_cost

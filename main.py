@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 main.py (version simplifiée)
-- Charge un fichier .vrp
+- Charge un fichier .vrp OU une instance par nom CVRPLIB (via 'vrplib' si installé)
 - Exécute l'algo génétique avec ses paramètres par défaut
 - Affiche et sauvegarde la solution (.sol) avec les IDs originaux
 - Affiche aussi le graphe de la solution (plot.py) et sauvegarde un .png
@@ -12,7 +12,7 @@ import argparse
 import os
 import sys
 
-from cvrp_data import load_cvrp_instance, CVRPInstance
+from cvrp_data import load_cvrp_instance, CVRPInstance, load_cvrp_from_vrplib
 from ga import genetic_algorithm
 from solution import verify_solution, solution_total_cost, write_solution_text
 
@@ -99,18 +99,56 @@ def main():
         "--instance",
         type=str,
         default=None,
-        help="Chemin vers le fichier .vrp. Si absent, essaie 'data.vrp' à côté de ce script puis dans le CWD.",
+        help="Chemin vers le fichier .vrp local. Si absent, essaie 'data.vrp' à côté de ce script puis dans le CWD.",
+    )
+    parser.add_argument(
+        "--name",
+        type=str,
+        default=None,
+        help="Nom d'une instance CVRPLIB (ex: A-n32-k5). Requiert 'pip install vrplib'.",
     )
     args = parser.parse_args()
 
-    instance_path = resolve_instance_path(args.instance)
-    if instance_path is None:
-        print("Aucun fichier .vrp trouvé.")
-        print("Passe un chemin avec --instance, ou place 'data.vrp' à côté de main.py (ou dans le répertoire courant).")
-        sys.exit(1)
+    # Variables résultantes
+    inst: CVRPInstance
+    original_ids_list: list[int]
+    instance_label = None
 
-    print(f"[Run] Chargement: {instance_path}")
-    inst: CVRPInstance = load_cvrp_instance(instance_path)
+    if args.name:
+        # Chargement direct depuis CVRPLIB via 'vrplib'
+        try:
+            inst, original_ids_list, best_known = load_cvrp_from_vrplib(args.name)
+        except ImportError as e:
+            print(str(e))
+            sys.exit(1)
+        except Exception as e:
+            print(f"Échec de chargement via vrplib pour '{args.name}': {e}")
+            sys.exit(1)
+
+        instance_label = args.name
+        print(f"[Run] Chargée depuis CVRPLIB (vrplib): {args.name}")
+        if best_known is not None and best_known > 0:
+            # On écrase la cible si connue pour afficher le gap
+            # (tu peux commenter cette ligne si tu veux garder la cible codée en dur)
+            global TARGET_OPTIMUM
+            TARGET_OPTIMUM = best_known
+            print(f"[Run] Best-known cost détecté: {best_known} (TARGET_OPTIMUM mis à jour)")
+    else:
+        # Fichier local
+        instance_path = resolve_instance_path(args.instance)
+        if instance_path is None:
+            print("Aucun fichier .vrp trouvé.")
+            print("Passe un chemin avec --instance, ou place 'data.vrp' à côté de main.py (ou dans le répertoire courant).")
+            print("Ou bien utilise --name A-n32-k5 (nécessite 'pip install vrplib').")
+            sys.exit(1)
+
+        print(f"[Run] Chargement: {instance_path}")
+        inst = load_cvrp_instance(instance_path)
+        # Mapping IDs originaux pour écriture sol
+        original_id_from_index, _ = build_original_id_mapping(inst, instance_path)
+        original_ids_list = [original_id_from_index[i] for i in range(inst.dimension)]
+        instance_label = os.path.splitext(os.path.basename(instance_path))[0]
+
     print(f"[Run] Instance: {inst.name} | N={inst.dimension} | Capacité={inst.capacity}")
     if TARGET_OPTIMUM is not None and TARGET_OPTIMUM <= 0:
         print("[Warn] TARGET_OPTIMUM doit être > 0 pour un calcul de gap utile.", flush=True)
@@ -118,8 +156,10 @@ def main():
         print(f"[Run] Arrêt possible par fichier sentinelle: crée '{STOP_SENTINEL_FILE}' pour stopper proprement.", flush=True)
     print("[Run] Astuce: Ctrl+C pour arrêter proprement et garder le meilleur courant.", flush=True)
 
-    # Mapping IDs originaux pour écrire une solution lisible
-    original_id_from_index, _ = build_original_id_mapping(inst, instance_path)
+    # Si on a chargé via nom CVRPLIB, on doit fabriquer original_ids_list
+    if args.name:
+        # load_cvrp_from_vrplib nous a déjà donné la liste index->id_original
+        pass
 
     # Exécute le GA (arrêt possible par Ctrl+C ou fichier sentinelle)
     best = genetic_algorithm(
@@ -146,14 +186,14 @@ def main():
             print(" -", m)
 
     # Sauvegarde solution (.sol) avec IDs originaux
-    base = os.path.splitext(os.path.basename(instance_path))[0]
+    base = instance_label or "instance"
     sol_path = f"solution_{base}.sol"
     write_solution_text(
         best.routes,
         inst,
         sol_path,
         include_depot=False,
-        original_id_from_index=[original_id_from_index[i] for i in range(inst.dimension)],
+        original_id_from_index=original_ids_list,
     )
     print(f"[Run] Solution écrite: {sol_path}")
 
