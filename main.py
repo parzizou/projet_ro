@@ -2,7 +2,7 @@
 """
 main.py (version simplifiée)
 - Charge un fichier .vrp OU une instance par nom CVRPLIB (via 'vrplib' si installé)
-- Exécute l'algo génétique avec ses paramètres par défaut
+- Exécute l'algo génétique avec ses paramètres par défaut (ou ceux passés à main)
 - Affiche et sauvegarde la solution (.sol) avec les IDs originaux
 - Affiche aussi le graphe de la solution (plot.py) et sauvegarde un .png
 """
@@ -19,9 +19,9 @@ from solution import verify_solution, solution_total_cost, write_solution_text
 # Chemin par défaut du fichier .vrp
 pathfile = "data4.vrp"
 
-# NOUVELLES OPTIONS (sans argparse): à éditer ici
+# NOUVELLES OPTIONS (sans argparse): à éditer soit ici, soit via les paramètres de main()
 # - valeur optimale cible pour afficher le gap (%) dans les logs et le résumé
-TARGET_OPTIMUM: int | None = 72355
+TARGET_OPTIMUM: int | None = None
 # - fichier sentinelle: s'il existe pendant l'exécution, l'algo s'arrête proprement
 STOP_SENTINEL_FILE: str | None = None  # ex: "stop.flag"
 
@@ -93,7 +93,36 @@ def build_original_id_mapping(inst: CVRPInstance, instance_path: str):
     return original_id_from_index, index_from_original_id
 
 
-def main():
+def _clamp01(x: float | None, default: float) -> float:
+    if x is None:
+        return default
+    return max(0.0, min(1.0, float(x)))
+
+
+def main(
+    pop_size: int | None = None,
+    mutation_rate: float | None = None,
+    crossover_rate: float | None = None,
+    two_opt_chance: float | None = None,
+    instance_vrplib: str | None = None,
+    init_mode: str = "nn_plus_random",   # "nn_plus_random" (défaut) ou "all_random"
+    instance: str | None = None,         # chemin .vrp alternatif si pas d'instance_vrplib
+):
+    """
+    Lance l'algo avec des paramètres passés directement à main pour faciliter les tests rapides.
+
+    Paramètres:
+      - pop_size: taille de la population (défaut 50)
+      - mutation_rate: taux de mutation [0..1] (défaut 0.30)
+      - crossover_rate: taux de croisement [0..1] (défaut 0.50)
+      - two_opt_chance: proba d'appliquer 2-opt [0..1] (défaut 0.35). 0.0 => 2-opt désactivé.
+      - instance_vrplib: nom d'instance CVRPLIB (ex: "A-n32-k5"). Si fourni, ignore --instance.
+      - init_mode: "nn_plus_random" ou "all_random"
+      - instance: chemin d'un fichier .vrp (si pas d'instance_vrplib)
+
+    Astuce:
+      - Si tu veux garder le comportement CLI, laisse ces paramètres à None et utilise --instance/--name.
+    """
     parser = argparse.ArgumentParser(description="CVRP - Exécution simple de l'algorithme génétique + plot")
     parser.add_argument(
         "--instance",
@@ -107,7 +136,14 @@ def main():
         default=None,
         help="Nom d'une instance CVRPLIB (ex: A-n32-k5). Requiert 'pip install vrplib'.",
     )
+    # On parse pour compat CLI, mais on va surcharger avec les params de main() si fournis.
     args = parser.parse_args()
+
+    # Surcharges via paramètres de main()
+    if instance_vrplib is not None:
+        args.name = instance_vrplib
+    if instance is not None:
+        args.instance = instance
 
     # Variables résultantes
     inst: CVRPInstance
@@ -129,7 +165,6 @@ def main():
         print(f"[Run] Chargée depuis CVRPLIB (vrplib): {args.name}")
         if best_known is not None and best_known > 0:
             # On écrase la cible si connue pour afficher le gap
-            # (tu peux commenter cette ligne si tu veux garder la cible codée en dur)
             global TARGET_OPTIMUM
             TARGET_OPTIMUM = best_known
             print(f"[Run] Best-known cost détecté: {best_known} (TARGET_OPTIMUM mis à jour)")
@@ -156,16 +191,26 @@ def main():
         print(f"[Run] Arrêt possible par fichier sentinelle: crée '{STOP_SENTINEL_FILE}' pour stopper proprement.", flush=True)
     print("[Run] Astuce: Ctrl+C pour arrêter proprement et garder le meilleur courant.", flush=True)
 
-    # Si on a chargé via nom CVRPLIB, on doit fabriquer original_ids_list
-    if args.name:
-        # load_cvrp_from_vrplib nous a déjà donné la liste index->id_original
-        pass
+    # Préparation des paramètres GA (avec valeurs par défaut si None)
+    ps = pop_size if pop_size is not None else 50
+    pm = _clamp01(mutation_rate, 0.30)
+    pc = _clamp01(crossover_rate, 0.50)
+    two_opt_prob = _clamp01(two_opt_chance, 0.35)
+    use_2opt = two_opt_prob > 0.0
+
+    print(f"[Run] Paramètres GA: pop_size={ps} | pm={pm:.2f} | pc={pc:.2f} | two_opt_prob={two_opt_prob:.2f} | init_mode={init_mode}")
 
     # Exécute le GA (arrêt possible par Ctrl+C ou fichier sentinelle)
     best = genetic_algorithm(
         inst,
+        pop_size=ps,
+        pm=pm,
+        pc=pc,
+        two_opt_prob=two_opt_prob,
+        use_2opt=use_2opt,
         target_optimum=TARGET_OPTIMUM,
         stop_on_file=STOP_SENTINEL_FILE,
+        init_mode=init_mode,
     )
 
     # Vérification + affichage
@@ -219,4 +264,14 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    # Modifie ces paramètres pour tester rapidement sans passer par la ligne de commande.
+    # Laisse à None pour garder les valeurs par défaut/CLI.
+    main(
+        pop_size=50,              # ex: 100
+        mutation_rate=0.30,       # ex: 0.25
+        crossover_rate=0.50,      # ex: 0.8
+        two_opt_chance=0.35,      # ex: 0.5 ; mets 0.0 pour désactiver 2-opt
+        instance_vrplib=None,     # ex: "A-n32-k5"
+        init_mode="nn_plus_random",  # ou "all_random" ou "nn_plus_random"
+        instance="data3.vrp",  # si tu veux forcer un fichier local
+    )

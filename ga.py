@@ -127,29 +127,45 @@ def make_initial_population(
     use_2opt: bool,
     verbose: bool = False,
     init_two_opt_prob: float = 0.6,  # un peu de 2-opt au départ pour de bonnes bases
+    init_mode: str = "nn_plus_random",  # "nn_plus_random" (défaut) ou "all_random"
 ) -> List[Individual]:
+    """
+    Construit la population initiale.
+    - nn_plus_random: 1 individu nearest-neighbor puis le reste aléatoire
+    - all_random: toute la population est générée par permutations aléatoires
+    """
     pop: List[Individual] = []
 
     if verbose:
-        print(f"[Init] Construction de la population initiale (taille={pop_size})...", flush=True)
+        print(f"[Init] Construction de la population initiale (taille={pop_size}, mode={init_mode})...", flush=True)
 
-    # 1) un individu greedy nearest-neighbor (toujours 2-opt pour un bon point de départ)
-    nn = nearest_neighbor_perm(inst, rng)
-    routes, cost = evaluate_perm(nn[:], inst, rng, use_2opt, two_opt_prob=1.0 if use_2opt else 0.0)
-    pop.append(Individual(perm=nn[:], routes=routes, cost=cost))
-
-    # 2) le reste aléatoire
     depot = inst.depot_index
     base = [i for i in range(inst.dimension) if i != depot]
     report_every = max(1, pop_size // 10)  # ~10% de progression
-    for idx in range(pop_size - 1):
-        rng.shuffle(base)
-        p = base[:]
-        routes, cost = evaluate_perm(p, inst, rng, use_2opt, two_opt_prob=init_two_opt_prob if use_2opt else 0.0)
-        pop.append(Individual(perm=p, routes=routes, cost=cost))
 
-        if verbose and ((idx + 2) % report_every == 0 or idx == pop_size - 2):
-            print(f"[Init] ... {idx + 2}/{pop_size} individus évalués", flush=True)
+    if init_mode == "all_random":
+        for idx in range(pop_size):
+            rng.shuffle(base)
+            p = base[:]
+            routes, cost = evaluate_perm(p, inst, rng, use_2opt, two_opt_prob=init_two_opt_prob if use_2opt else 0.0)
+            pop.append(Individual(perm=p, routes=routes, cost=cost))
+            if verbose and ((idx + 1) % report_every == 0 or idx == pop_size - 1):
+                print(f"[Init] ... {idx + 1}/{pop_size} individus évalués", flush=True)
+    else:
+        # 1) un individu greedy nearest-neighbor (toujours 2-opt pour un bon point de départ)
+        nn = nearest_neighbor_perm(inst, rng)
+        routes, cost = evaluate_perm(nn[:], inst, rng, use_2opt, two_opt_prob=1.0 if use_2opt else 0.0)
+        pop.append(Individual(perm=nn[:], routes=routes, cost=cost))
+
+        # 2) le reste aléatoire
+        for idx in range(pop_size - 1):
+            rng.shuffle(base)
+            p = base[:]
+            routes, cost = evaluate_perm(p, inst, rng, use_2opt, two_opt_prob=init_two_opt_prob if use_2opt else 0.0)
+            pop.append(Individual(perm=p, routes=routes, cost=cost))
+
+            if verbose and ((idx + 2) % report_every == 0 or idx == pop_size - 2):
+                print(f"[Init] ... {idx + 2}/{pop_size} individus évalués", flush=True)
 
     if verbose:
         best_init = min(pop, key=lambda ind: ind.cost)
@@ -181,6 +197,7 @@ def genetic_algorithm(
     time_limit_sec: float = 20000.0,  # limite de temps en secondes (0 = pas de limite)
     target_optimum: int | None = None,  # valeur optimale connue (pour gap%)
     stop_on_file: str | None = None,    # chemin d'un fichier sentinelle pour arrêt propre
+    init_mode: str = "nn_plus_random",  # "nn_plus_random" ou "all_random"
 ) -> Individual:
     """
     Boucle principale du GA. Retourne le meilleur individu trouvé.
@@ -189,6 +206,10 @@ def genetic_algorithm(
       - Ctrl+C (KeyboardInterrupt)
       - stop_on_file est fourni et existe.
     Si target_optimum est fourni, affiche le gap (%) dans les logs.
+
+    init_mode:
+      - "nn_plus_random": 1 individu nearest-neighbor puis le reste aléatoire
+      - "all_random": population entièrement aléatoire
     """
     rng = random.Random(seed)
 
@@ -199,13 +220,21 @@ def genetic_algorithm(
         return f" | gap={gap:.2f}% (opt={target_optimum})"
 
     start_time = time.time()
-    pop = make_initial_population(inst, pop_size, rng, use_2opt, verbose=verbose, init_two_opt_prob=0.5)
+    pop = make_initial_population(
+        inst,
+        pop_size,
+        rng,
+        use_2opt,
+        verbose=verbose,
+        init_two_opt_prob=0.5,
+        init_mode=init_mode,
+    )
     pop.sort(key=lambda ind: ind.cost)
     best = pop[0]
 
     if verbose:
         bcost, avg = _stats(pop)
-        print(f"[GA] Départ: best={bcost:.0f} | avg={avg:.0f} | #routes_best={len(best.routes)}{fmt_gap(bcost)}", flush=True)
+        print(f"[GA] Départ: best={bcost:.0f} | avg={avg:.0f} | #routes_best={len(best.routes)} | init_mode={init_mode}{fmt_gap(bcost)}", flush=True)
 
     stopped_by = None  # "time", "file", "keyboard", or None
 
@@ -280,14 +309,10 @@ def genetic_algorithm(
         stopped_by = "keyboard"
         if verbose:
             elapsed = time.time() - start_time
-            print(f"\n[GA] Interruption utilisateur (Ctrl+C). Arrêt propre. t+{elapsed:.1f}s", flush=True)
+            print(f"[GA] Arrêt par utilisateur (Ctrl+C) après {elapsed:.1f}s à gen {gen-1}.", flush=True)
 
     if verbose:
         total_elapsed = time.time() - start_time
-        reason = {"time": "limite de temps", "file": "fichier sentinelle", "keyboard": "Ctrl+C", None: "fin normale"}[stopped_by]
-        print(
-            f"[GA] Terminé ({reason}) en {total_elapsed:.1f}s. Best cost={best.cost} | #routes={len(best.routes)}{fmt_gap(best.cost)}",
-            flush=True,
-        )
+        print(f"[GA] Terminé après {total_elapsed:.1f}s. Meilleur coût trouvé: {best.cost} | #routes={len(best.routes)}", flush=True)
 
     return best
