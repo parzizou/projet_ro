@@ -12,12 +12,12 @@ import argparse
 import os
 import sys
 
-from cvrp_data import load_cvrp_instance, CVRPInstance
-from ga import genetic_algorithm
-from solution import verify_solution, solution_total_cost, write_solution_text
+from src.core.cvrp_data import load_cvrp_instance, CVRPInstance
+from src.core.ga import genetic_algorithm
+from src.core.solution import verify_solution, solution_total_cost, write_solution_text
 
-# Chemin par défaut du fichier .vrp
-pathfile = "data.vrp"
+# Chemin par défaut du fichier .vrp  
+pathfile = "data/instances/data.vrp"
 
 # NOUVELLES OPTIONS (sans argparse): à éditer ici
 # - valeur optimale cible pour afficher le gap (%) dans les logs et le résumé
@@ -161,7 +161,7 @@ def main():
     title = f"{inst.name} | coût={total} | véhicules={nb_veh}"
     img_path = f"solution_{base}.png"
     try:
-        from plot import plot_solution
+        from src.visualization.plot_solution import plot_solution
         print("[Run] Affichage du graphe de la solution (matplotlib requis)...")
         plot_solution(
             inst,

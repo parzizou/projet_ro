@@ -1,0 +1,192 @@
+# RÉSUMÉ ULTRA-RAPIDE - 2025-11-06 09:47:23
+# Tests de 15 secondes pour validation rapide des tendances
+#
+# CLASSEMENT PAR PERFORMANCE
+#============================================================
+
+RANG  1
+Configuration: Mutation_High
+Coût moyen:    23137.5
+Meilleur coût: 22989
+Tous les coûts: [23286, 22989]
+Paramètres modifiés:
+  pm             : 0.35
+--------------------------------------------------
+
+RANG  2
+Configuration: Pop_Large
+Coût moyen:    23156.5
+Meilleur coût: 23084
+Tous les coûts: [23084, 23229]
+Paramètres modifiés:
+  pop_size       : 150
+--------------------------------------------------
+
+RANG  3
+Configuration: 2opt_High
+Coût moyen:    23236.0
+Meilleur coût: 22990
+Tous les coûts: [22990, 23482]
+Paramètres modifiés:
+  two_opt_prob   : 0.6
+--------------------------------------------------
+
+RANG  4
+Configuration: Crossover_Low
+Coût moyen:    23247.0
+Meilleur coût: 23067
+Tous les coûts: [23427, 23067]
+Paramètres modifiés:
+  pc             : 0.8
+--------------------------------------------------
+
+RANG  5
+Configuration: No_2opt
+Coût moyen:    23356.5
+Meilleur coût: 23319
+Tous les coûts: [23394, 23319]
+Paramètres modifiés:
+  use_2opt       : False
+--------------------------------------------------
+
+RANG  6
+Configuration: Elitism_Low
+Coût moyen:    23467.5
+Meilleur coût: 23253
+Tous les coûts: [23253, 23682]
+Paramètres modifiés:
+  elitism        : 2
+--------------------------------------------------
+
+RANG  7
+Configuration: Elitism_High
+Coût moyen:    23491.0
+Meilleur coût: 23308
+Tous les coûts: [23308, 23674]
+Paramètres modifiés:
+  elitism        : 12
+--------------------------------------------------
+
+RANG  8
+Configuration: Crossover_High
+Coût moyen:    23540.5
+Meilleur coût: 23242
+Tous les coûts: [23242, 23839]
+Paramètres modifiés:
+  pc             : 0.95
+--------------------------------------------------
+
+RANG  9
+Configuration: Tournament_Medium
+Coût moyen:    23542.5
+Meilleur coût: 23246
+Tous les coûts: [23246, 23839]
+Paramètres modifiés:
+  tournament_k   : 4
+--------------------------------------------------
+
+RANG 10
+Configuration: Pop_Medium
+Coût moyen:    23557.5
+Meilleur coût: 23246
+Tous les coûts: [23246, 23869]
+Paramètres modifiés:
+  pop_size       : 100
+--------------------------------------------------
+
+RANG 11
+Configuration: Tournament_High
+Coût moyen:    23580.5
+Meilleur coût: 23402
+Tous les coûts: [23759, 23402]
+Paramètres modifiés:
+  tournament_k   : 6
+--------------------------------------------------
+
+RANG 12
+Configuration: Mutation_Low
+Coût moyen:    23603.5
+Meilleur coût: 23480
+Tous les coûts: [23727, 23480]
+Paramètres modifiés:
+  pm             : 0.15
+--------------------------------------------------
+
+RANG 13
+Configuration: 2opt_Low
+Coût moyen:    23696.5
+Meilleur coût: 23565
+Tous les coûts: [23828, 23565]
+Paramètres modifiés:
+  two_opt_prob   : 0.2
+--------------------------------------------------
+
+RANG 14
+Configuration: Pop_Small
+Coût moyen:    23756.5
+Meilleur coût: 23367
+Tous les coûts: [23367, 24146]
+Paramètres modifiés:
+  pop_size       : 60
+--------------------------------------------------
+
+RANG 15
+Configuration: Elitism_Medium
+Coût moyen:    23868.5
+Meilleur coût: 23822
+Tous les coûts: [23915, 23822]
+Paramètres modifiés:
+  elitism        : 6
+--------------------------------------------------
+
+RANG 16
+Configuration: Tournament_Low
+Coût moyen:    24317.0
+Meilleur coût: 24031
+Tous les coûts: [24031, 24603]
+Paramètres modifiés:
+  tournament_k   : 2
+--------------------------------------------------
+
+ANALYSE PAR PARAMÈTRE
+========================================
+
+PM:
+  Meilleure valeur: 0.35 (coût: 23137.5)
+  Pire valeur: 0.15 (coût: 23603.5)
+  Amélioration: 2.0%
+
+POP_SIZE:
+  Meilleure valeur: 150 (coût: 23156.5)
+  Pire valeur: 60 (coût: 23756.5)
+  Amélioration: 2.5%
+
+TWO_OPT_PROB:
+  Meilleure valeur: 0.6 (coût: 23236.0)
+  Pire valeur: 0.2 (coût: 23696.5)
+  Amélioration: 1.9%
+
+PC:
+  Meilleure valeur: 0.8 (coût: 23247.0)
+  Pire valeur: 0.95 (coût: 23540.5)
+  Amélioration: 1.2%
+
+ELITISM:
+  Meilleure valeur: 2 (coût: 23467.5)
+  Pire valeur: 6 (coût: 23868.5)
+  Amélioration: 1.7%
+
+TOURNAMENT_K:
+  Meilleure valeur: 4 (coût: 23542.5)
+  Pire valeur: 2 (coût: 24317.0)
+  Amélioration: 3.2%
+
+RECOMMANDATIONS ULTRA-RAPIDES
+========================================
+Meilleure configuration testée: Mutation_High
+Coût obtenu: 23137.5
+Paramètres recommandés pour tests approfondis:
+  pm = 0.35
+
+Note: Résultats basés sur des tests de 15s seulement.
+Pour validation définitive, utilisez quick_parameter_test.py
