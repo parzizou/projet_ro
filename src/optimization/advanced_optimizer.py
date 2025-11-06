@@ -339,7 +339,7 @@ class ParameterOptimizer:
 def main():
     """Fonction principale pour lancer l'optimisation."""
     # Configuration
-    instance_path = "data.vrp"  # Modifiez selon votre fichier
+    instance_path = "data/instances/data.vrp"  # Modifiez selon votre fichier
     target_optimum = 21220      # Modifiez selon votre instance (optionnel)
     
     # Vérification de l'existence du fichier

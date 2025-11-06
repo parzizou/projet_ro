@@ -1,0 +1,510 @@
+{
+  "instance_info": {
+    "name": "X-n153-k22",
+    "dimension": 153,
+    "capacity": 144,
+    "target_optimum": 21220
+  },
+  "results": [
+    {
+      "parameters": {
+        "pop_size": 110,
+        "tournament_k": 3,
+        "elitism": 4,
+        "pc": 0.9,
+        "pm": 0.25,
+        "two_opt_prob": 0.35,
+        "use_2opt": true
+      },
+      "cost_mean": 23208,
+      "cost_std": 153.26773959317075,
+      "cost_min": 23078,
+      "cost_max": 23377,
+      "vehicles_mean": 24.666666666666668,
+      "time_mean": 139.33717703819275,
+      "num_runs": 3,
+      "all_costs": [
+        23169,
+        23377,
+        23078
+      ],
+      "gap_mean": 9.36852026390198,
+      "gap_min": 8.755890669180019
+    },
+    {
+      "parameters": {
+        "pop_size": 110,
+        "tournament_k": 3,
+        "elitism": 4,
+        "pc": 0.95,
+        "pm": 0.25,
+        "two_opt_prob": 0.35,
+        "use_2opt": true
+      },
+      "cost_mean": 23378,
+      "cost_std": 351.57360538015365,
+      "cost_min": 23068,
+      "cost_max": 23760,
+      "vehicles_mean": 25.333333333333332,
+      "time_mean": 45.18082594871521,
+      "num_runs": 3,
+      "all_costs": [
+        23306,
+        23068,
+        23760
+      ],
+      "gap_mean": 10.169651272384543,
+      "gap_min": 8.708765315739868
+    },
+    {
+      "parameters": {
+        "pop_size": 80,
+        "tournament_k": 4,
+        "elitism": 6,
+        "pc": 0.9,
+        "pm": 0.25,
+        "two_opt_prob": 0.5,
+        "use_2opt": true
+      },
+      "cost_mean": 23449,
+      "cost_std": 596.007550287746,
+      "cost_min": 22834,
+      "cost_max": 24024,
+      "vehicles_mean": 25.666666666666668,
+      "time_mean": 45.24164787928263,
+      "num_runs": 3,
+      "all_costs": [
+        22834,
+        23489,
+        24024
+      ],
+      "gap_mean": 10.504241281809614,
+      "gap_min": 7.606032045240339
+    },
+    {
+      "parameters": {
+        "pop_size": 110,
+        "tournament_k": 4,
+        "elitism": 6,
+        "pc": 0.95,
+        "pm": 0.2,
+        "two_opt_prob": 0.35,
+        "use_2opt": true
+      },
+      "cost_mean": 23451.666666666668,
+      "cost_std": 277.5938279813392,
+      "cost_min": 23260,
+      "cost_max": 23770,
+      "vehicles_mean": 25.333333333333332,
+      "time_mean": 45.301327546437584,
+      "num_runs": 3,
+      "all_costs": [
+        23325,
+        23260,
+        23770
+      ],
+      "gap_mean": 10.516808042726993,
+      "gap_min": 9.613572101790764
+    },
+    {
+      "parameters": {
+        "pop_size": 80,
+        "tournament_k": 3,
+        "elitism": 6,
+        "pc": 0.9,
+        "pm": 0.2,
+        "two_opt_prob": 0.5,
+        "use_2opt": true
+      },
+      "cost_mean": 23466.333333333332,
+      "cost_std": 106.23715608643397,
+      "cost_min": 23349,
+      "cost_max": 23556,
+      "vehicles_mean": 25,
+      "time_mean": 45.29754590988159,
+      "num_runs": 3,
+      "all_costs": [
+        23494,
+        23349,
+        23556
+      ],
+      "gap_mean": 10.585925227772535,
+      "gap_min": 10.032987747408106
+    },
+    {
+      "parameters": {
+        "pop_size": 110,
+        "tournament_k": 4,
+        "elitism": 6,
+        "pc": 0.9,
+        "pm": 0.25,
+        "two_opt_prob": 0.5,
+        "use_2opt": true
+      },
+      "cost_mean": 23470,
+      "cost_std": 747.778710582215,
+      "cost_min": 22787,
+      "cost_max": 24269,
+      "vehicles_mean": 25.333333333333332,
+      "time_mean": 45.29096372922262,
+      "num_runs": 3,
+      "all_costs": [
+        22787,
+        23354,
+        24269
+      ],
+      "gap_mean": 10.60320452403393,
+      "gap_min": 7.384542884071631
+    },
+    {
+      "parameters": {
+        "pop_size": 110,
+        "tournament_k": 3,
+        "elitism": 4,
+        "pc": 0.95,
+        "pm": 0.2,
+        "two_opt_prob": 0.5,
+        "use_2opt": true
+      },
+      "cost_mean": 23480.333333333332,
+      "cost_std": 377.3358362696728,
+      "cost_min": 23155,
+      "cost_max": 23894,
+      "vehicles_mean": 25.666666666666668,
+      "time_mean": 45.18980995814005,
+      "num_runs": 3,
+      "all_costs": [
+        23155,
+        23392,
+        23894
+      ],
+      "gap_mean": 10.651900722588746,
+      "gap_min": 9.11875589066918
+    },
+    {
+      "parameters": {
+        "pop_size": 110,
+        "tournament_k": 3,
+        "elitism": 6,
+        "pc": 0.9,
+        "pm": 0.25,
+        "two_opt_prob": 0.35,
+        "use_2opt": true
+      },
+      "cost_mean": 23495,
+      "cost_std": 456.7231108669672,
+      "cost_min": 23199,
+      "cost_max": 24021,
+      "vehicles_mean": 25.666666666666668,
+      "time_mean": 45.362640142440796,
+      "num_runs": 3,
+      "all_costs": [
+        23199,
+        24021,
+        23265
+      ],
+      "gap_mean": 10.721017907634307,
+      "gap_min": 9.326107445805844
+    },
+    {
+      "parameters": {
+        "pop_size": 110,
+        "tournament_k": 3,
+        "elitism": 6,
+        "pc": 0.9,
+        "pm": 0.2,
+        "two_opt_prob": 0.35,
+        "use_2opt": true
+      },
+      "cost_mean": 23498.666666666668,
+      "cost_std": 407.84351574266,
+      "cost_min": 23159,
+      "cost_max": 23951,
+      "vehicles_mean": 25.333333333333332,
+      "time_mean": 45.24295163154602,
+      "num_runs": 3,
+      "all_costs": [
+        23951,
+        23386,
+        23159
+      ],
+      "gap_mean": 10.738297203895701,
+      "gap_min": 9.137606032045241
+    },
+    {
+      "parameters": {
+        "pop_size": 110,
+        "tournament_k": 3,
+        "elitism": 4,
+        "pc": 0.95,
+        "pm": 0.2,
+        "two_opt_prob": 0.35,
+        "use_2opt": true
+      },
+      "cost_mean": 23517.666666666668,
+      "cost_std": 230.23538679649863,
+      "cost_min": 23261,
+      "cost_max": 23706,
+      "vehicles_mean": 25.333333333333332,
+      "time_mean": 45.32241519292196,
+      "num_runs": 3,
+      "all_costs": [
+        23586,
+        23261,
+        23706
+      ],
+      "gap_mean": 10.827835375431988,
+      "gap_min": 9.618284637134778
+    },
+    {
+      "parameters": {
+        "pop_size": 110,
+        "tournament_k": 4,
+        "elitism": 6,
+        "pc": 0.95,
+        "pm": 0.25,
+        "two_opt_prob": 0.35,
+        "use_2opt": true
+      },
+      "cost_mean": 23521.333333333332,
+      "cost_std": 469.1708999216952,
+      "cost_min": 23202,
+      "cost_max": 24060,
+      "vehicles_mean": 25.333333333333332,
+      "time_mean": 45.24585096041361,
+      "num_runs": 3,
+      "all_costs": [
+        23302,
+        24060,
+        23202
+      ],
+      "gap_mean": 10.845114671693365,
+      "gap_min": 9.340245051837888
+    },
+    {
+      "parameters": {
+        "pop_size": 80,
+        "tournament_k": 3,
+        "elitism": 6,
+        "pc": 0.9,
+        "pm": 0.25,
+        "two_opt_prob": 0.35,
+        "use_2opt": true
+      },
+      "cost_mean": 23547.666666666668,
+      "cost_std": 152.22461474194418,
+      "cost_min": 23374,
+      "cost_max": 23658,
+      "vehicles_mean": 25.333333333333332,
+      "time_mean": 45.10839692751566,
+      "num_runs": 3,
+      "all_costs": [
+        23658,
+        23611,
+        23374
+      ],
+      "gap_mean": 10.969211435752442,
+      "gap_min": 10.150801131008482
+    },
+    {
+      "parameters": {
+        "pop_size": 80,
+        "tournament_k": 4,
+        "elitism": 4,
+        "pc": 0.95,
+        "pm": 0.25,
+        "two_opt_prob": 0.5,
+        "use_2opt": true
+      },
+      "cost_mean": 23565.333333333332,
+      "cost_std": 402.4081675778131,
+      "cost_min": 23245,
+      "cost_max": 24017,
+      "vehicles_mean": 25.666666666666668,
+      "time_mean": 45.04297995567322,
+      "num_runs": 3,
+      "all_costs": [
+        23245,
+        23434,
+        24017
+      ],
+      "gap_mean": 11.052466226830028,
+      "gap_min": 9.542884071630537
+    },
+    {
+      "parameters": {
+        "pop_size": 80,
+        "tournament_k": 3,
+        "elitism": 6,
+        "pc": 0.9,
+        "pm": 0.25,
+        "two_opt_prob": 0.5,
+        "use_2opt": true
+      },
+      "cost_mean": 23584,
+      "cost_std": 560.602354615105,
+      "cost_min": 22939,
+      "cost_max": 23954,
+      "vehicles_mean": 26,
+      "time_mean": 45.05053106943766,
+      "num_runs": 3,
+      "all_costs": [
+        23859,
+        23954,
+        22939
+      ],
+      "gap_mean": 11.140433553251649,
+      "gap_min": 8.100848256361923
+    },
+    {
+      "parameters": {
+        "pop_size": 80,
+        "tournament_k": 4,
+        "elitism": 4,
+        "pc": 0.9,
+        "pm": 0.25,
+        "two_opt_prob": 0.5,
+        "use_2opt": true
+      },
+      "cost_mean": 23640.666666666668,
+      "cost_std": 281.17669415037466,
+      "cost_min": 23387,
+      "cost_max": 23943,
+      "vehicles_mean": 25.666666666666668,
+      "time_mean": 45.124285538991295,
+      "num_runs": 3,
+      "all_costs": [
+        23592,
+        23387,
+        23943
+      ],
+      "gap_mean": 11.407477222745843,
+      "gap_min": 10.212064090480679
+    },
+    {
+      "parameters": {
+        "pop_size": 80,
+        "tournament_k": 4,
+        "elitism": 6,
+        "pc": 0.95,
+        "pm": 0.2,
+        "two_opt_prob": 0.5,
+        "use_2opt": true
+      },
+      "cost_mean": 23705.333333333332,
+      "cost_std": 290.5517739290768,
+      "cost_min": 23418,
+      "cost_max": 23999,
+      "vehicles_mean": 26,
+      "time_mean": 45.12717000643412,
+      "num_runs": 3,
+      "all_costs": [
+        23699,
+        23418,
+        23999
+      ],
+      "gap_mean": 11.71222117499214,
+      "gap_min": 10.358152686145147
+    },
+    {
+      "parameters": {
+        "pop_size": 110,
+        "tournament_k": 4,
+        "elitism": 4,
+        "pc": 0.9,
+        "pm": 0.2,
+        "two_opt_prob": 0.5,
+        "use_2opt": true
+      },
+      "cost_mean": 23737,
+      "cost_std": 132.27622613304328,
+      "cost_min": 23648,
+      "cost_max": 23889,
+      "vehicles_mean": 25.666666666666668,
+      "time_mean": 45.267635663350426,
+      "num_runs": 3,
+      "all_costs": [
+        23674,
+        23889,
+        23648
+      ],
+      "gap_mean": 11.861451460885956,
+      "gap_min": 11.442035815268614
+    },
+    {
+      "parameters": {
+        "pop_size": 80,
+        "tournament_k": 3,
+        "elitism": 4,
+        "pc": 0.9,
+        "pm": 0.2,
+        "two_opt_prob": 0.5,
+        "use_2opt": true
+      },
+      "cost_mean": 23747.666666666668,
+      "cost_std": 414.7822722023367,
+      "cost_min": 23342,
+      "cost_max": 24171,
+      "vehicles_mean": 25.333333333333332,
+      "time_mean": 45.2083854675293,
+      "num_runs": 3,
+      "all_costs": [
+        23730,
+        24171,
+        23342
+      ],
+      "gap_mean": 11.911718504555457,
+      "gap_min": 10.0
+    },
+    {
+      "parameters": {
+        "pop_size": 80,
+        "tournament_k": 4,
+        "elitism": 4,
+        "pc": 0.9,
+        "pm": 0.2,
+        "two_opt_prob": 0.35,
+        "use_2opt": true
+      },
+      "cost_mean": 23842.333333333332,
+      "cost_std": 247.35871388195187,
+      "cost_min": 23628,
+      "cost_max": 24113,
+      "vehicles_mean": 25.666666666666668,
+      "time_mean": 45.13617658615112,
+      "num_runs": 3,
+      "all_costs": [
+        23628,
+        24113,
+        23786
+      ],
+      "gap_mean": 12.357838517122206,
+      "gap_min": 11.347785108388313
+    },
+    {
+      "parameters": {
+        "pop_size": 80,
+        "tournament_k": 3,
+        "elitism": 4,
+        "pc": 0.9,
+        "pm": 0.25,
+        "two_opt_prob": 0.35,
+        "use_2opt": true
+      },
+      "cost_mean": 23843.666666666668,
+      "cost_std": 232.0351984793112,
+      "cost_min": 23614,
+      "cost_max": 24078,
+      "vehicles_mean": 26,
+      "time_mean": 45.042401711146034,
+      "num_runs": 3,
+      "all_costs": [
+        23839,
+        24078,
+        23614
+      ],
+      "gap_mean": 12.364121897580905,
+      "gap_min": 11.281809613572102
+    }
+  ]
+}

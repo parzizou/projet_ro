@@ -151,7 +151,7 @@ def save_ultra_quick_summary(results: list, filename: str = None):
 
 def ultra_quick_parameter_test():
     """Test ultra-rapide avec des paramètres représentatifs."""
-    instance_path = "data.vrp"
+    instance_path = "data/instances/data.vrp"
     
     print("TEST ULTRA-RAPIDE DE PARAMÈTRES GA")
     print("=" * 50)
@@ -409,7 +409,7 @@ def save_ultra_quick_summary(results: list, filename: str = None):
 
 def ultra_quick_parameter_test():
     """Test ultra-rapide avec des paramètres représentatifs."""
-    instance_path = "data.vrp"
+    instance_path = "data/instances/data.vrp"
     
     print("TEST ULTRA-RAPIDE DE PARAMÈTRES GA")
     print("=" * 50)
