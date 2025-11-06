@@ -1,110 +1,75 @@
-# Projet CVRP - Optimisation par Algorithme Génétique
+# CVRP — Résolution par algorithme génétique, simple et clair
 
-Projet de résolution du **Capacitated Vehicle Routing Problem (CVRP)** utilisant un algorithme génétique optimisé avec recherche locale 2-opt.
+Ce projet résout un problème de tournées de véhicules avec capacité (chaque camion a une place limitée). L’objectif est de livrer tous les clients en partant du dépôt, sans dépasser la capacité des camions, en minimisant le temps de trajet total (on l’assimile à la distance totale).
 
-## 🚀 Installation
+Points importants:
+- Tous les véhicules ont la même capacité.
+- On respecte la capacité grâce au “découpage intelligent” des tournées.
+- Limite stricte de temps de calcul: par défaut ~170 secondes (< 3 minutes).
+- Fenêtres de temps (ex: livrer entre 8h et 18h): non gérées explicitement dans cette version.
+  - On suppose que minimiser la distance revient à minimiser le temps de tournée.
 
-```bash
-git clone <votre-repo>
-cd projet_ro
-pip install -r requirements.txt
+## Ce que contient le dépôt
+
+- `cvrp_data.py` — Lecture des fichiers CVRPLIB `.vrp`, construction de l’instance:
+  - coordonnées des points (clients + dépôt)
+  - demandes des clients
+  - capacité des véhicules
+  - matrice de distances (euclidienne arrondie à la manière TSPLIB)
+  - Nouveau: `load_cvrp_from_vrplib(name)` pour charger directement une instance par son nom depuis le package Python `vrplib`, et récupérer le best-known cost si disponible.
+- `split.py` — Découpe une “grande tournée” en plusieurs tournées faisables (respect de la capacité) via une programmation dynamique.
+- `localsearch.py` — Amélioration locale “par inversion de segments” à l’intérieur d’une tournée (souvent appelée 2-opt).
+- `solution.py` — Calcul du coût d’une solution, vérification des contraintes, lecture/écriture de solutions texte.
+- `ga.py` — Le cœur de l’algorithme génétique: population, sélection, croisement, mutation, évaluation, élitisme, limite de temps.
+- `plot.py` — Affichage des tournées trouvées (optionnel, nécessite `matplotlib`).
+- `main.py` — Petit lanceur: charge une instance (par chemin local ou par nom CVRPLIB), exécute l’algo, vérifie et écrit la solution, et affiche le tracé.
+
+## Nouveautés
+
+- Arrêt propre à la demande:
+  - Appuie sur Ctrl+C pendant l’exécution: l’algo s’arrête proprement et garde le meilleur individu courant.
+  - Option `STOP_SENTINEL_FILE` dans `main.py`: si ce fichier existe, l’algo stoppe proprement à la fin de la génération.
+- Gap vs optimal:
+  - Variable `TARGET_OPTIMUM` dans `main.py`. Lors d’un chargement par nom CVRPLIB (`--name`), si une solution de référence est disponible via `vrplib`, la valeur est automatiquement mise à jour avec le best-known cost.
+- Chargement direct par nom CVRPLIB:
+  - Utilise le package `vrplib` pour télécharger/charger les instances et, si possible, la solution de référence.
+  - Permet d’appeler: `python main.py --name A-n32-k5`
+
+## Lancer le programme
+
+Prérequis:
+- Python 3.10 ou plus
+- Optionnel pour l’affichage: `pip install matplotlib`
+- Optionnel pour le chargement par nom CVRPLIB: `pip install vrplib`
+
+Exécutions possibles:
+- Avec un fichier `.vrp` local:
 ```
-
-## 📁 Structure du projet
-
+python main.py --instance /chemin/vers/mon_instance.vrp
 ```
-projet_ro/
-├── src/                          # Code source
-│   ├── core/                     # Modules CVRP de base
-│   │   ├── cvrp_data.py          # Chargement instances
-│   │   ├── ga.py                 # Algorithme génétique
-│   │   ├── solution.py           # Gestion solutions
-│   │   ├── localsearch.py        # Recherche locale
-│   │   └── split.py              # Algorithme de split
-│   ├── optimization/             # Scripts d'optimisation
-│   │   ├── quick_test.py         # Tests complets (2-4h)
-│   │   ├── ultra_quick_test.py   # Tests rapides (8-10min)
-│   │   └── advanced_optimizer.py # Optimisation avancée
-│   └── visualization/            # Graphiques et analyse
-│       ├── plot_results.py       # Analyse paramètres
-│       └── plot_solution.py      # Visualisation solutions
-├── data/                         # Données
-│   ├── instances/                # Instances CVRP
-│   └── solutions/                # Solutions générées
-├── results/                      # Résultats des tests
-│   ├── parameter_tests/          # Tests de paramètres
-│   ├── optimization_runs/        # Runs d'optimisation
-│   └── plots/                    # Graphiques générés
-├── docs/                         # Documentation
-│   ├── README.md                 # Documentation détaillée
-│   └── optimization_guide.md     # Guide d'optimisation
-├── main.py                       # Point d'entrée principal
-└── requirements.txt              # Dépendances
+- Directement par le nom d’une instance CVRPLIB (ex: A-n32-k5):
 ```
-
-## 🎯 Utilisation rapide
-
-### 1. Résoudre une instance CVRP
-```bash
-python main.py
+pip install vrplib
+python main.py --name A-n32-k5
 ```
+Dans ce second cas:
+- L’instance est récupérée via `vrplib`.
+- Si `vrplib` expose une solution de référence, le best-known cost est automatiquement utilisé pour calculer le gap.
 
-### 2. Optimiser les paramètres (ultra-rapide)
-```bash
-cd src/optimization
-python ultra_quick_test.py
-```
+Sorties:
+- Affiche le coût total, le nombre de véhicules (nombre de tournées), et la validité des contraintes.
+- Si une valeur optimale est connue (`TARGET_OPTIMUM` non nulle): affiche aussi `Gap vs optimal: X.YZ%`.
+- Écrit un fichier solution texte: `solution_<nom_instance>.sol`
+- Si `matplotlib` est dispo, sauvegarde une image: `solution_<nom_instance>.png`
 
-### 3. Analyser les résultats
-```bash
-cd src/visualization  
-python plot_results.py
-```
+## Paramètres utiles (où les changer)
 
-## 📊 Workflow d'optimisation recommandé
+Dans `ga.py`, la fonction `genetic_algorithm(...)` contient les réglages principaux:
+- Taille de population, nombre de générations max
+- Sélection par tournoi (taille du tournoi)
+- Probabilités de croisement et de mutation
+- Activation et probabilité de l’amélioration locale
+- Limite de temps (par défaut 170 secondes)
+- Option `target_optimum` (affichage gap), et `stop_on_file` (arrêt propre via fichier sentinelle)
 
-1. **Test ultra-rapide** (8-10 min) → identification des tendances
-2. **Tests complets** (2-4h) → validation approfondie
-3. **Analyse graphique** → compréhension des impacts
-4. **Application** → utilisation des meilleurs paramètres
-
-## 📖 Documentation détaillée
-
-- [Documentation complète](docs/README.md)
-- [Guide d'optimisation](docs/optimization_guide.md)
-
-## 🛠️ Fonctionnalités principales
-
-- **Algorithme génétique** avec sélection par tournoi et élitisme
-- **Recherche locale 2-opt** pour amélioration des solutions
-- **Tests automatisés** de 60-150+ configurations de paramètres
-- **Visualisations avancées** avec matplotlib
-- **Analyse statistique** complète des performances
-
-## 🎯 Paramètres optimisables
-
-- Population, sélection, élitisme
-- Probabilités de crossover et mutation
-- Optimisation 2-opt (activation/probabilité)
-- Critères d'arrêt (temps/générations)
-
-## 🔧 Configuration
-
-Instance par défaut : `data/instances/data.vrp`
-
-Pour utiliser votre propre instance, remplacez le fichier ou modifiez les chemins dans les scripts.
-
-## 📈 Résultats
-
-Les résultats sont automatiquement sauvegardés dans :
-- `results/parameter_tests/` : Données des tests
-- `results/plots/` : Graphiques générés
-- `data/solutions/` : Solutions CVRP
-
-## 🚨 Remarque importante
-
-Les **paramètres de l'instance CVRP** (capacité, coordonnées, demandes) ne sont **jamais modifiés**. Seuls les **paramètres de l'algorithme génétique** sont optimisés.
-
----
-
-*Développé pour l'optimisation du Capacitated Vehicle Routing Problem*
+Besoin d’aide pour intégrer des fenêtres de temps ou booster les perfs ? Dis-moi, on itère.
