@@ -355,7 +355,7 @@ def generate_extended_parameter_variations():
     return configurations
 def main():
     """Fonction principale pour les tests de paramètres."""
-    instance_path = "../../data/instances/data.vrp"  # Chemin vers l'instance
+    instance_path = "data/instances/data.vrp"  # Chemin vers l'instance
     
     print("TEST SYSTÉMATIQUE DE PARAMÈTRES GA")
     print("=" * 50)

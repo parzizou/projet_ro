@@ -10,7 +10,7 @@ Outils autour des solutions VRP:
 
 from __future__ import annotations
 from typing import List, Tuple, Optional
-from cvrp_data import CVRPInstance
+from .cvrp_data import CVRPInstance
 
 
 def solution_total_cost(routes: List[List[int]], inst: CVRPInstance) -> int:

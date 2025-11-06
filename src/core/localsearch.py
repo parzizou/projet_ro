@@ -10,7 +10,7 @@ Optimisation:
 
 from __future__ import annotations
 from typing import List
-from cvrp_data import CVRPInstance
+from .cvrp_data import CVRPInstance
 
 
 def route_cost_with_depot(route: List[int], inst: CVRPInstance) -> int:

@@ -1,0 +1,133 @@
+# RÉSUMÉ DES MEILLEURS RÉSULTATS - 2025-11-06 10:54:55
+# Configurations triées par performance (meilleur coût d'abord)
+#
+# FORMAT:
+# Rang | Nom_Config | Coût_Moyen | Coût_Min | Écart-Type | Paramètres
+#================================================================================
+
+RANG  1
+Configuration: Élitisme Fort
+Coût moyen:   23416.7
+Meilleur:     23139
+Pire:         23907
+Écart-type:   347.73
+Véhicules:    25.0
+Temps:        30.2s
+Paramètres:
+  pop_size       : 100
+  tournament_k   : 4
+  elitism        : 10
+  pc             : 0.9
+  pm             : 0.15
+  use_2opt       : True
+  two_opt_prob   : 0.6
+  time_limit     : 30.0
+  generations    : 50000
+Tous les coûts: [23907, 23139, 23204]
+------------------------------------------------------------
+
+RANG  2
+Configuration: Configuration Standard
+Coût moyen:   23606.3
+Meilleur:     23417
+Pire:         23736
+Écart-type:   136.89
+Véhicules:    26.0
+Temps:        30.2s
+Paramètres:
+  pop_size       : 100
+  tournament_k   : 4
+  elitism        : 4
+  pc             : 0.95
+  pm             : 0.25
+  use_2opt       : True
+  two_opt_prob   : 0.35
+  time_limit     : 30.0
+  generations    : 50000
+Tous les coûts: [23417, 23666, 23736]
+------------------------------------------------------------
+
+RANG  3
+Configuration: Population Large
+Coût moyen:   23617.7
+Meilleur:     23399
+Pire:         23807
+Écart-type:   167.85
+Véhicules:    26.0
+Temps:        30.3s
+Paramètres:
+  pop_size       : 150
+  tournament_k   : 5
+  elitism        : 6
+  pc             : 0.9
+  pm             : 0.2
+  use_2opt       : True
+  two_opt_prob   : 0.5
+  time_limit     : 30.0
+  generations    : 50000
+Tous les coûts: [23399, 23647, 23807]
+------------------------------------------------------------
+
+RANG  4
+Configuration: Sans 2-opt (Rapide)
+Coût moyen:   23776.3
+Meilleur:     23319
+Pire:         24448
+Écart-type:   485.19
+Véhicules:    25.3
+Temps:        30.3s
+Paramètres:
+  pop_size       : 120
+  tournament_k   : 4
+  elitism        : 5
+  pc             : 0.95
+  pm             : 0.25
+  use_2opt       : False
+  two_opt_prob   : 0.0
+  time_limit     : 30.0
+  generations    : 50000
+Tous les coûts: [24448, 23562, 23319]
+------------------------------------------------------------
+
+RANG  5
+Configuration: Exploration Intensive
+Coût moyen:   24060.3
+Meilleur:     23624
+Pire:         24408
+Écart-type:   326.15
+Véhicules:    25.3
+Temps:        30.2s
+Paramètres:
+  pop_size       : 80
+  tournament_k   : 3
+  elitism        : 2
+  pc             : 0.98
+  pm             : 0.3
+  use_2opt       : True
+  two_opt_prob   : 0.2
+  time_limit     : 30.0
+  generations    : 50000
+Tous les coûts: [24149, 24408, 23624]
+------------------------------------------------------------
+
+STATISTIQUES GLOBALES
+========================================
+Configurations testées: 5
+Meilleur coût global:   23416.7
+Pire coût global:       24060.3
+Coût moyen global:      23695.5
+Amélioration possible:  2.7%
+
+CONFIGURATION RECOMMANDÉE
+========================================
+Nom: Élitisme Fort
+Paramètres optimaux:
+  pop_size = 100
+  tournament_k = 4
+  elitism = 10
+  pc = 0.9
+  pm = 0.15
+  use_2opt = True
+  two_opt_prob = 0.6
+  time_limit = 30.0
+  generations = 50000

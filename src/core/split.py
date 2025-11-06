@@ -14,7 +14,7 @@ Accélération:
 
 from __future__ import annotations
 from typing import List
-from cvrp_data import CVRPInstance
+from .cvrp_data import CVRPInstance
 
 # ======== Option accélérée via Numba (auto si dispo) ========
 _NUMBA_AVAILABLE = False
