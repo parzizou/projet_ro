@@ -11,11 +11,19 @@ Algorithme génétique pour le CVRP:
 Améliorations:
 - Arrêt propre à la demande (Ctrl+C ou fichier sentinelle)
 - Affichage du gap (%) si une valeur optimale cible est fournie
+
+Diversification (nouveau):
+- Random immigrants à chaque génération (fraction configurable)
+- Détection/éviction des doublons (sur la structure des routes)
+- Heavy mutation et shake si stagnation
+- Restart partiel si forte stagnation prolongée
+- Mutations supplémentaires: insertion et scramble
+- Mutation adaptative optionnelle (augmente pm si stagnation)
 """
 
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import List, Tuple
+from typing import List, Tuple, Set
 import random
 import time
 import os
@@ -96,6 +104,39 @@ def mutate_inversion(perm: List[int], rng: random.Random) -> None:
     perm[i:j] = reversed(perm[i:j])
 
 
+def mutate_insertion(perm: List[int], rng: random.Random) -> None:
+    n = len(perm)
+    if n < 2:
+        return
+    i, j = rng.randrange(n), rng.randrange(n)
+    if i == j:
+        return
+    node = perm.pop(i)
+    perm.insert(j, node)
+
+
+def mutate_scramble(perm: List[int], rng: random.Random) -> None:
+    n = len(perm)
+    if n < 4:
+        return
+    i, j = sorted(rng.sample(range(n), 2))
+    if j - i <= 1:
+        return
+    segment = perm[i:j]
+    rng.shuffle(segment)
+    perm[i:j] = segment
+
+
+def heavy_mutate(perm: List[int], rng: random.Random, steps: int | None = None) -> None:
+    """
+    Applique plusieurs mutations aléatoires pour une grosse secousse.
+    """
+    ops = [mutate_swap, mutate_inversion, mutate_insertion, mutate_scramble]
+    k = steps if steps is not None else rng.randint(3, 6)
+    for _ in range(k):
+        rng.choice(ops)(perm, rng)
+
+
 def evaluate_perm(
     perm: List[int],
     inst: CVRPInstance,
@@ -118,6 +159,28 @@ def evaluate_perm(
 def tournament_select(pop: List[Individual], k: int, rng: random.Random) -> Individual:
     cand = rng.sample(pop, k)
     return min(cand, key=lambda ind: ind.cost)
+
+
+def _route_signature(routes: List[List[int]]) -> Tuple[Tuple[int, ...], ...]:
+    """
+    Signature hashable d'une solution basée sur la structure des routes.
+    (ordre des clients par route; ignorer dépôt inutile ici)
+    """
+    return tuple(tuple(r) for r in routes)
+
+
+def _new_random_individual(
+    inst: CVRPInstance,
+    rng: random.Random,
+    use_2opt: bool,
+    two_opt_prob: float,
+) -> Individual:
+    depot = inst.depot_index
+    base = [i for i in range(inst.dimension) if i != depot]
+    rng.shuffle(base)
+    perm = base[:]
+    routes, cost = evaluate_perm(perm, inst, rng, use_2opt, two_opt_prob)
+    return Individual(perm=perm, routes=routes, cost=cost)
 
 
 def make_initial_population(
@@ -185,27 +248,36 @@ def genetic_algorithm(
     inst: CVRPInstance,
     pop_size: int = 50,
     generations: int = 100000,
-    tournament_k: int = 4,      
-    elitism: int = 4,          
-    pc: float = 0.50, # crossover probability
-    pm: float = 0.30, # mutation probability
+    tournament_k: int = 3,           # -1 par défaut (moins de pression de sélection)
+    elitism: int = 3,                # un peu plus bas pour garder de la place à la diversité
+    pc: float = 0.50,                # crossover probability
+    pm: float = 0.30,                # mutation probability de base
     seed: int | None = 1,
     use_2opt: bool = True,
     verbose: bool = True,
     log_interval: int = 10,
-    two_opt_prob: float = 0.35,  
+    two_opt_prob: float = 0.35,
     time_limit_sec: float = 20000.0,  # limite de temps en secondes (0 = pas de limite)
     target_optimum: int | None = None,  # valeur optimale connue (pour gap%)
     stop_on_file: str | None = None,    # chemin d'un fichier sentinelle pour arrêt propre
     init_mode: str = "nn_plus_random",  # "nn_plus_random" ou "all_random"
+
+    # Diversification (nouveaux paramètres)
+    immigrants_frac: float = 0.1,      # fraction d'immigrants aléatoires ajoutés à chaque génération
+    duplicate_avoidance: bool = True,   # éviter d'ajouter 2x la même structure de routes
+    stagnation_shake_gens: int = 60,    # après X générations sans amélioration -> shake
+    stagnation_restart_gens: int = 180, # après Y générations sans amélioration -> restart partiel
+    adaptive_mutation: bool = True,     # pm augmente avec la stagnation
 ) -> Individual:
     """
     Boucle principale du GA. Retourne le meilleur individu trouvé.
-    Respecte une limite de temps si spécifiée (time_limit_sec > 0).
-    S'arrête proprement si:
-      - Ctrl+C (KeyboardInterrupt)
-      - stop_on_file est fourni et existe.
-    Si target_optimum est fourni, affiche le gap (%) dans les logs.
+
+    Diversification:
+      - Random immigrants: remplace une fraction des pires individus à chaque génération.
+      - Duplicate avoidance: évite d'empiler des solutions identiques (par routes).
+      - Shake: si stagnation, heavy mutate une partie de la pop (hors élites).
+      - Restart partiel: si longue stagnation, on garde le meilleur et on réensemence le reste.
+      - Mutation adaptative: pm légèrement augmenté avec la stagnation; 2-opt un peu réduit pour laisser explorer.
 
     init_mode:
       - "nn_plus_random": 1 individu nearest-neighbor puis le reste aléatoire
@@ -228,15 +300,20 @@ def genetic_algorithm(
         verbose=verbose,
         init_two_opt_prob=0.5,
         init_mode=init_mode,
+        
     )
     pop.sort(key=lambda ind: ind.cost)
     best = pop[0]
+    last_improve_gen = 0
 
     if verbose:
         bcost, avg = _stats(pop)
         print(f"[GA] Départ: best={bcost:.0f} | avg={avg:.0f} | #routes_best={len(best.routes)} | init_mode={init_mode}{fmt_gap(bcost)}", flush=True)
 
     stopped_by = None  # "time", "file", "keyboard", or None
+
+    # Aides: pour éviter les doublons de routes
+    route_signatures: Set[Tuple[Tuple[int, ...], ...]] = set(_route_signature(ind.routes) for ind in pop)
 
     try:
         for gen in range(1, generations + 1):
@@ -253,6 +330,14 @@ def genetic_algorithm(
                 if verbose:
                     print(f"[GA] Fichier sentinelle détecté ({stop_on_file}). Arrêt propre à gen {gen-1}.", flush=True)
                 break
+
+            stale = gen - last_improve_gen
+            stale_ratio = min(1.0, stale / max(1, stagnation_restart_gens))
+            # Mutation adaptative + 2-opt plus léger si stagnation
+            pm_eff = pm * (1.0 + 0.6 * stale_ratio) if adaptive_mutation else pm
+            pm_eff = max(0.01, min(0.95, pm_eff))
+            two_opt_prob_eff = two_opt_prob * (1.0 - 0.30 * stale_ratio) if adaptive_mutation else two_opt_prob
+            two_opt_prob_eff = max(0.0, min(1.0, two_opt_prob_eff))
 
             new_pop: List[Individual] = []
 
@@ -271,30 +356,123 @@ def genetic_algorithm(
                 else:
                     c1_perm, c2_perm = p1.perm[:], p2.perm[:]
 
-                # Mutation
-                if rng.random() < pm:
-                    if rng.random() < 0.5:
+                # Mutation (adaptative)
+                if rng.random() < pm_eff:
+                    if rng.random() < 0.25:
+                        mutate_insertion(c1_perm, rng)
+                    elif rng.random() < 0.5:
+                        mutate_scramble(c1_perm, rng)
+                    elif rng.random() < 0.75:
                         mutate_swap(c1_perm, rng)
                     else:
                         mutate_inversion(c1_perm, rng)
-                if rng.random() < pm:
-                    if rng.random() < 0.5:
+                if rng.random() < pm_eff:
+                    if rng.random() < 0.25:
+                        mutate_insertion(c2_perm, rng)
+                    elif rng.random() < 0.5:
+                        mutate_scramble(c2_perm, rng)
+                    elif rng.random() < 0.75:
                         mutate_swap(c2_perm, rng)
                     else:
                         mutate_inversion(c2_perm, rng)
 
                 # Évaluation
-                c1_routes, c1_cost = evaluate_perm(c1_perm, inst, rng, use_2opt, two_opt_prob=two_opt_prob)
-                c2_routes, c2_cost = evaluate_perm(c2_perm, inst, rng, use_2opt, two_opt_prob=two_opt_prob)
+                c1_routes, c1_cost = evaluate_perm(c1_perm, inst, rng, use_2opt, two_opt_prob=two_opt_prob_eff)
+                c2_routes, c2_cost = evaluate_perm(c2_perm, inst, rng, use_2opt, two_opt_prob=two_opt_prob_eff)
+
+                # Anti-duplicates: réessayer via heavy mutate quelques fois
+                if duplicate_avoidance:
+                    tries = 0
+                    sig1 = _route_signature(c1_routes)
+                    while sig1 in route_signatures and tries < 2:
+                        heavy_mutate(c1_perm, rng)
+                        c1_routes, c1_cost = evaluate_perm(c1_perm, inst, rng, use_2opt, two_opt_prob=two_opt_prob_eff)
+                        sig1 = _route_signature(c1_routes)
+                        tries += 1
 
                 new_pop.append(Individual(c1_perm, c1_routes, c1_cost))
+                route_signatures.add(_route_signature(c1_routes))
+
                 if len(new_pop) < pop_size:
+                    if duplicate_avoidance:
+                        tries = 0
+                        sig2 = _route_signature(c2_routes)
+                        while sig2 in route_signatures and tries < 2:
+                            heavy_mutate(c2_perm, rng)
+                            c2_routes, c2_cost = evaluate_perm(c2_perm, inst, rng, use_2opt, two_opt_prob=two_opt_prob_eff)
+                            sig2 = _route_signature(c2_routes)
+                            tries += 1
                     new_pop.append(Individual(c2_perm, c2_routes, c2_cost))
+                    route_signatures.add(_route_signature(c2_routes))
+
+            # Diversification: random immigrants (remplace les pires)
+            if immigrants_frac > 0.0:
+                m = int(pop_size * max(0.0, min(0.5, immigrants_frac)))
+                if m > 0:
+                    # tri avant remplacement
+                    new_pop.sort(key=lambda ind: ind.cost)
+                    replaced = 0
+                    for _ in range(m):
+                        immigrant = _new_random_individual(inst, rng, use_2opt, two_opt_prob_eff * 0.5)
+                        # éviter doublons
+                        if duplicate_avoidance:
+                            sig = _route_signature(immigrant.routes)
+                            tries = 0
+                            while sig in route_signatures and tries < 3:
+                                immigrant = _new_random_individual(inst, rng, use_2opt, two_opt_prob_eff * 0.5)
+                                sig = _route_signature(immigrant.routes)
+                                tries += 1
+                            route_signatures.add(sig)
+                        new_pop[-(1 + replaced)] = immigrant
+                        replaced += 1
+                    if verbose and (gen % max(1, log_interval) == 0):
+                        print(f"[GA] Gen {gen}: immigrants={m}", flush=True)
 
             pop = new_pop
             pop.sort(key=lambda ind: ind.cost)
             if pop[0].cost < best.cost:
                 best = pop[0]
+                last_improve_gen = gen
+
+            # Stagnation: shake / restart
+            stale = gen - last_improve_gen
+            if stale > 0 and stale % max(1, stagnation_shake_gens) == 0 and stale < stagnation_restart_gens:
+                # shake: heavy mutate une partie de la pop (hors élites), puis réévaluer
+                start = elitism
+                end = min(pop_size, elitism + max(1, pop_size // 3))
+                for idx in range(start, end):
+                    ind = pop[idx]
+                    heavy_mutate(ind.perm, rng)
+                    ind.routes, ind.cost = evaluate_perm(ind.perm, inst, rng, use_2opt, two_opt_prob=two_opt_prob_eff)
+                pop.sort(key=lambda ind: ind.cost)
+                if verbose:
+                    print(f"[GA] Gen {gen}: shake population (stale={stale})", flush=True)
+                # reset signatures (recalcul rapide)
+                route_signatures = set(_route_signature(ind.routes) for ind in pop)
+
+            if stale >= stagnation_restart_gens:
+                # restart partiel: garder le meilleur, réensemencer le reste
+                keep = 1
+                survivors = pop[:keep]
+                new_pop = survivors[:]
+                route_signatures = set(_route_signature(ind.routes) for ind in survivors)
+                while len(new_pop) < pop_size:
+                    immigrant = _new_random_individual(inst, rng, use_2opt, two_opt_prob_eff * 0.4)
+                    if duplicate_avoidance:
+                        sig = _route_signature(immigrant.routes)
+                        tries = 0
+                        while sig in route_signatures and tries < 3:
+                            heavy_mutate(immigrant.perm, rng)
+                            immigrant.routes, immigrant.cost = evaluate_perm(immigrant.perm, inst, rng, use_2opt, two_opt_prob=two_opt_prob_eff * 0.4)
+                            sig = _route_signature(immigrant.routes)
+                            tries += 1
+                        route_signatures.add(sig)
+                    new_pop.append(immigrant)
+                pop = new_pop
+                pop.sort(key=lambda ind: ind.cost)
+                last_improve_gen = gen  # on repart
+                if verbose:
+                    print(f"[GA] Gen {gen}: RESTART partiel (stale={stale})", flush=True)
 
             if verbose and (gen % max(1, log_interval) == 0 or gen == 1):
                 elapsed = time.time() - start_time
@@ -302,7 +480,7 @@ def genetic_algorithm(
                 bcost, avg = _stats(pop)
                 print(
                     f"[GA] Gen {gen}/{generations} | best={bcost:.0f} | avg={avg:.0f} | #routes_best={len(best.routes)}"
-                    f"{fmt_gap(bcost)} | t+{elapsed:.1f}s | ETA~{eta:.1f}s",
+                    f"{fmt_gap(bcost)} | t+{elapsed:.1f}s | ETA~{eta:.1f}s | pm_eff={pm_eff:.2f} | 2opt={two_opt_prob_eff:.2f}",
                     flush=True,
                 )
     except KeyboardInterrupt:
