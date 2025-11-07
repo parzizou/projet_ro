@@ -33,7 +33,23 @@ class ParameterResultsPlotter:
         """
         self.filename = filename
         self.results = []
+        
+        # Extraire un identifiant unique du nom de fichier
+        import re
+        from datetime import datetime
+        match = re.search(r'(\d{8}_\d{6})', filename)
+        if match:
+            self.file_id = match.group(1)
+        else:
+            # Fallback: utiliser timestamp actuel
+            self.file_id = datetime.now().strftime("%Y%m%d_%H%M%S")
+        
         self.load_results()
+    
+    def get_unique_filename(self, base_name: str) -> str:
+        """Génère un nom de fichier unique basé sur l'ID du fichier source."""
+        name, ext = os.path.splitext(base_name)
+        return f"{name}_{self.file_id}{ext}"
     
     def load_results(self):
         """Charge les résultats depuis le fichier texte."""
@@ -1038,40 +1054,40 @@ def main():
             
             if param in all_params:
                 save = input("Sauvegarder le graphique? (y/n): ").strip().lower() == 'y'
-                save_path = f"impact_{param}_detailed.png" if save else None
+                save_path = plotter.get_unique_filename(f"impact_{param}_detailed.png") if save else None
                 plotter.plot_parameter_impact(param, save_path)
             else:
                 print("Paramètre non trouvé.")
         elif choice == "3":
             save = input("Sauvegarder le graphique? (y/n): ").strip().lower() == 'y'
-            save_path = "synthese_parametres.png" if save else None
+            save_path = plotter.get_unique_filename("synthese_parametres.png") if save else None
             plotter.plot_all_parameters_summary(save_path)
         elif choice == "4":
             save = input("Sauvegarder le graphique? (y/n): ").strip().lower() == 'y'
-            save_path = "comparaison_best_worst.png" if save else None
+            save_path = plotter.get_unique_filename("comparaison_best_worst.png") if save else None
             plotter.plot_best_vs_worst(save_path)
         elif choice == "5":
             save = input("Sauvegarder le graphique? (y/n): ").strip().lower() == 'y'
-            save_path = "histogrammes_grid.png" if save else None
+            save_path = plotter.get_unique_filename("histogrammes_grid.png") if save else None
             plotter.plot_parameter_histograms_grid(save_path)
         elif choice == "6":
             save = input("Sauvegarder le graphique? (y/n): ").strip().lower() == 'y'
-            save_path = "performance_heatmap.png" if save else None
+            save_path = plotter.get_unique_filename("performance_heatmap.png") if save else None
             plotter.plot_performance_heatmap(save_path)
         elif choice == "7":
             print("Génération de tous les graphiques...")
             
             # Synthèse
-            plotter.plot_all_parameters_summary("synthese_parametres.png")
+            plotter.plot_all_parameters_summary(plotter.get_unique_filename("synthese_parametres.png"))
             
             # Comparaison
-            plotter.plot_best_vs_worst("comparaison_best_worst.png")
+            plotter.plot_best_vs_worst(plotter.get_unique_filename("comparaison_best_worst.png"))
             
             # Grille d'histogrammes
-            plotter.plot_parameter_histograms_grid("histogrammes_grid.png")
+            plotter.plot_parameter_histograms_grid(plotter.get_unique_filename("histogrammes_grid.png"))
             
             # Heatmap
-            plotter.plot_performance_heatmap("performance_heatmap.png")
+            plotter.plot_performance_heatmap(plotter.get_unique_filename("performance_heatmap.png"))
             
             # Impact de chaque paramètre
             all_params = set()
@@ -1079,7 +1095,7 @@ def main():
                 all_params.update(result['parameters'].keys())
             
             for param in all_params:
-                plotter.plot_parameter_impact(param, f"impact_{param}_detailed.png")
+                plotter.plot_parameter_impact(param, plotter.get_unique_filename(f"impact_{param}_detailed.png"))
             
             print("Tous les graphiques ont été générés et sauvegardés.")
         else:

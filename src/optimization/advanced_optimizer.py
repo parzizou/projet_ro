@@ -406,7 +406,11 @@ def main():
     
     # Affichage et sauvegarde des résultats
     if choice != "4":
-        optimizer.save_results()
+        # Génération d'un nom de fichier unique avec timestamp
+        from datetime import datetime
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        results_filename = f"optimization_results_{timestamp}.json"
+        optimizer.save_results(results_filename)
     
     optimizer.print_best_results(top_n=5)
     
