@@ -48,7 +48,7 @@ def run_single_ga(instance_path: str, config: dict, run_id: int):
         use_2opt=config['use_2opt'],
         verbose=False,
         two_opt_prob=config['two_opt_prob'],
-        time_limit_sec=config.get('time_limit', 30.0)
+    time_limit_sec=config.get('time_limit', 60.0)
     )
     
     exec_time = time.time() - start_time
@@ -264,7 +264,7 @@ def generate_parameter_variations():
         'pm': 0.25,
         'use_2opt': True,
         'two_opt_prob': 0.35,
-        'time_limit': 30.0,  # Réduit à 30s
+        'time_limit': 60.0,  # Réduit à 60s
         'generations': 50000  # Augmenté car limité par temps
     }
     
@@ -351,7 +351,7 @@ def generate_extended_parameter_variations():
         'pm': 0.25,
         'use_2opt': True,
         'two_opt_prob': 0.35,
-        'time_limit': 30.0,  # Réduit à 30s
+        'time_limit': 60.0,  # Réduit à 60s
         'generations': 50000  # Augmenté car limité par temps
     }
     
@@ -422,7 +422,7 @@ def main():
                 'pm': 0.25,
                 'use_2opt': True,
                 'two_opt_prob': 0.35,
-                'time_limit': 30.0,  # Réduit à 30s
+                'time_limit': 60.0,  # Réduit à 60s
                 'generations': 50000  # Augmenté car limité par temps
             },
             {
@@ -434,7 +434,7 @@ def main():
                 'pm': 0.2,
                 'use_2opt': True,
                 'two_opt_prob': 0.5,
-                'time_limit': 30.0,  # Réduit à 30s
+                'time_limit': 60.0,  # Réduit à 60s
                 'generations': 50000
             },
             {
@@ -446,7 +446,7 @@ def main():
                 'pm': 0.3,
                 'use_2opt': True,
                 'two_opt_prob': 0.2,
-                'time_limit': 30.0,  # Réduit à 30s
+                'time_limit': 60.0,  # Réduit à 60s
                 'generations': 50000
             },
             {
@@ -458,7 +458,7 @@ def main():
                 'pm': 0.25,
                 'use_2opt': False,
                 'two_opt_prob': 0.0,
-                'time_limit': 30.0,  # Réduit à 30s
+                'time_limit': 60.0,  # Réduit à 60s
                 'generations': 50000
             },
             {
@@ -470,7 +470,7 @@ def main():
                 'pm': 0.15,
                 'use_2opt': True,
                 'two_opt_prob': 0.6,
-                'time_limit': 30.0,  # Réduit à 30s
+                'time_limit': 60.0,  # Réduit à 60s
                 'generations': 50000
             }
         ]
@@ -494,7 +494,7 @@ def main():
             # Ajout de configurations additionnelles
             base_config = {
                 'pop_size': 100, 'tournament_k': 4, 'elitism': 4, 'pc': 0.95, 'pm': 0.25,
-                'use_2opt': True, 'two_opt_prob': 0.35, 'time_limit': 30.0, 'generations': 50000
+                'use_2opt': True, 'two_opt_prob': 0.35, 'time_limit': 60.0, 'generations': 50000
             }
             
             # Variations extrêmes pour explorer les limites
@@ -519,13 +519,13 @@ def main():
             return
         
         print(f"\nNombre total de configurations: {len(configurations)}")
-        print(f"Temps estimé: ~{len(configurations) * 3 * 30 / 60:.1f} minutes (30s par run)")
+        print(f"Temps estimé: ~{len(configurations) * 3 * 60 / 60:.1f} minutes (60s par run)")
         
         confirm = input("Continuer? (y/n): ").strip().lower()
         if confirm != 'y':
             print("Test annulé.")
             return
-            
+        
     elif choice == "3":
         print("Mode personnalisé non implémenté dans cette version.")
         return

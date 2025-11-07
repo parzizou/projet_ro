@@ -416,7 +416,7 @@ def main():
         results = optimizer.grid_search(
             parameter_space=param_space,
             num_runs=3,
-            time_limit=45.0,
+            time_limit=60.0,
             generations=30000,
             max_combinations=20,
             max_workers=max_workers
