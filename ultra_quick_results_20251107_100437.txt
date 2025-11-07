@@ -1,0 +1,20 @@
+# Résultats de tests ultra-rapides - 2025-11-07 10:04:37
+# Temps par run: 15 secondes, 2 runs par configuration
+# Format: config_name|param:value|avg_cost|min_cost|all_costs
+#
+Pop_Small|pop_size:60|avg_cost:24851.0|min_cost:24696|all_costs:[25006,24696]
+No_2opt|use_2opt:False|avg_cost:25254.0|min_cost:25160|all_costs:[25348,25160]
+Elitism_Medium|elitism:6|avg_cost:25300.0|min_cost:25195|all_costs:[25405,25195]
+Pop_Medium|pop_size:100|avg_cost:25306.5|min_cost:25073|all_costs:[25073,25540]
+2opt_Low|two_opt_prob:0.2|avg_cost:25351.5|min_cost:25037|all_costs:[25037,25666]
+Tournament_Medium|tournament_k:4|avg_cost:25380.5|min_cost:25073|all_costs:[25688,25073]
+Crossover_High|pc:0.95|avg_cost:25385.5|min_cost:25083|all_costs:[25688,25083]
+Mutation_Low|pm:0.15|avg_cost:25461.0|min_cost:25310|all_costs:[25310,25612]
+Crossover_Low|pc:0.8|avg_cost:25490.5|min_cost:25218|all_costs:[25218,25763]
+Elitism_High|elitism:12|avg_cost:25493.5|min_cost:25482|all_costs:[25482,25505]
+Tournament_High|tournament_k:6|avg_cost:25516.5|min_cost:25115|all_costs:[25918,25115]
+2opt_High|two_opt_prob:0.6|avg_cost:25913.5|min_cost:25749|all_costs:[26078,25749]
+Mutation_High|pm:0.35|avg_cost:26217.5|min_cost:26107|all_costs:[26107,26328]
+Elitism_Low|elitism:2|avg_cost:26303.0|min_cost:25954|all_costs:[26652,25954]
+Pop_Large|pop_size:150|avg_cost:26310.5|min_cost:25835|all_costs:[25835,26786]
+Tournament_Low|tournament_k:2|avg_cost:26722.5|min_cost:26236|all_costs:[27209,26236]

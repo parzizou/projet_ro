@@ -1,0 +1,8 @@
+# Résultats de tests de paramètres GA - 2025-11-07 11:36:08
+# Format: config_name|param1:value1|param2:value2|...|cost_mean|cost_min|cost_max|cost_std|vehicles_mean|time_mean|num_runs
+#
+Population Large|pop_size:150|tournament_k:5|elitism:6|pc:0.9|pm:0.2|use_2opt:True|two_opt_prob:0.5|time_limit:30.0|generations:50000|cost_mean:23944.7|cost_min:23898|cost_max:23979|cost_std:34.20|vehicles_mean:26.0|time_mean:30.2|num_runs:3|all_costs:[23898,23957,23979]
+Configuration Standard|pop_size:100|tournament_k:4|elitism:4|pc:0.95|pm:0.25|use_2opt:True|two_opt_prob:0.35|time_limit:30.0|generations:50000|cost_mean:24083.7|cost_min:23997|cost_max:24136|cost_std:61.72|vehicles_mean:26.0|time_mean:30.2|num_runs:3|all_costs:[24118,24136,23997]
+Élitisme Fort|pop_size:100|tournament_k:4|elitism:10|pc:0.9|pm:0.15|use_2opt:True|two_opt_prob:0.6|time_limit:30.0|generations:50000|cost_mean:24273.0|cost_min:23947|cost_max:24778|cost_std:362.10|vehicles_mean:25.3|time_mean:30.3|num_runs:3|all_costs:[23947,24094,24778]
+Exploration Intensive|pop_size:80|tournament_k:3|elitism:2|pc:0.98|pm:0.3|use_2opt:True|two_opt_prob:0.2|time_limit:30.0|generations:50000|cost_mean:24398.7|cost_min:24038|cost_max:24714|cost_std:277.83|vehicles_mean:26.0|time_mean:30.2|num_runs:3|all_costs:[24444,24714,24038]
+Sans 2-opt (Rapide)|pop_size:120|tournament_k:4|elitism:5|pc:0.95|pm:0.25|use_2opt:False|two_opt_prob:0.0|time_limit:30.0|generations:50000|cost_mean:24437.0|cost_min:24063|cost_max:24991|cost_std:399.66|vehicles_mean:25.7|time_mean:30.2|num_runs:3|all_costs:[24991,24257,24063]
