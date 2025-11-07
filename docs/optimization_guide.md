@@ -14,7 +14,7 @@ python quick_parameter_test.py
 
 **Fonctionnalités :**
 - **Tests étendus** : 60+ configurations base + 150+ configurations étendues
-- **Optimisé pour vitesse** : 30s par run, détection de stagnation  
+ - **Optimisé pour vitesse** : 60s par run, détection de stagnation  
 - **Sauvegarde automatique** des résultats en format texte analysable
 - **Fichier des meilleurs résultats** avec recommandations
 - **Support des combinaisons prometteuses** basées sur la littérature
@@ -74,6 +74,7 @@ python optimize_ga_parameters.py
 
 **Paramètres de contrôle :**
 - `time_limit` : Limite de temps par run (15s, 30s, 45s selon le script)
+- `time_limit` : Limite de temps par run (15s pour `ultra_quick_test.py`, 60s pour `quick_parameter_test.py` et `advanced_optimizer.py`)
 - `generations` : Nombre maximum de générations (50000)
 
 **Note importante :** Les paramètres de l'instance CVRP (capacité, coordonnées, demandes) ne sont JAMAIS modifiés.

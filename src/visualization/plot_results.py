@@ -993,6 +993,9 @@ def main():
     """Fonction principale pour la génération de graphiques."""
     print("GÉNÉRATEUR DE GRAPHIQUES - RÉSULTATS DE TESTS DE PARAMÈTRES")
     print("=" * 60)
+    # Indiquer les durées de test par défaut pour guider l'utilisateur
+    print("Note: Les tests longs utilisent désormais 60s par run (scripts `quick_parameter_test.py` et `advanced_optimizer.py`).")
+    print("      Le script `ultra_quick_test.py` reste à 15s par run pour validation rapide.")
     
     # Sélection du fichier de résultats
     print("\nFichiers de résultats disponibles:")
