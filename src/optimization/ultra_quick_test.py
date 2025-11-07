@@ -8,7 +8,7 @@ from __future__ import annotations
 import time
 import sys
 import os
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_completed
 
 # Ajouter le répertoire parent au path pour les imports
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
@@ -49,6 +49,53 @@ def run_single_ultra_quick_ga(instance, config, run, config_name):
             'exec_time': exec_time
         }
         
+    except Exception as e:
+        return {
+            'config_name': config_name,
+            'run': run,
+            'cost': None,
+            'valid': False,
+            'error': str(e),
+            'exec_time': 0
+        }
+
+
+def run_single_ultra_quick_ga_worker(instance_path, config, run, config_name):
+    """Worker utilisable par ProcessPoolExecutor : charge l'instance localement puis exécute le GA.
+
+    Les arguments sont simples/picklables (chemin, dict, int, str) pour fonctionner sous multiprocessing.
+    """
+    try:
+        # Charger l'instance dans le worker (évite d'envoyer des objets non picklables)
+        instance = load_cvrp_instance(instance_path)
+
+        start_time = time.time()
+        best = genetic_algorithm(
+            inst=instance,
+            pop_size=config['pop_size'],
+            generations=config['generations'],
+            tournament_k=config['tournament_k'],
+            elitism=config['elitism'],
+            pc=config['pc'],
+            pm=config['pm'],
+            seed=42 + run,
+            use_2opt=config['use_2opt'],
+            verbose=False,
+            two_opt_prob=config['two_opt_prob'],
+            time_limit_sec=config['time_limit']
+        )
+
+        exec_time = time.time() - start_time
+        is_valid, _ = verify_solution(best.routes, instance)
+
+        return {
+            'config_name': config_name,
+            'run': run,
+            'cost': best.cost if is_valid else None,
+            'valid': is_valid,
+            'exec_time': exec_time
+        }
+
     except Exception as e:
         return {
             'config_name': config_name,
@@ -275,37 +322,83 @@ def ultra_quick_parameter_test(max_workers=None):
             })
     
     total_jobs = len(jobs)
-    print(f"Total jobs: {total_jobs} (exécution en {max_workers} threads)")
-    
-    # Exécution multi-thread
+    print(f"Total jobs: {total_jobs} (exécution en {max_workers} workers)")
+
+    # Exécution multi-processus (ProcessPoolExecutor) avec fallback sur ThreadPoolExecutor
     start_time = time.time()
     job_results = []
-    
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        # Soumission de tous les jobs
-        future_to_job = {
-            executor.submit(
-                run_single_ultra_quick_ga,
-                instance,
-                job['config'],
-                job['run'],
-                job['config_name']
-            ): job for job in jobs
-        }
-        
-        completed = 0
-        for future in as_completed(future_to_job):
-            result = future.result()
-            job_results.append(result)
-            
-            completed += 1
-            job = future_to_job[future]
-            
-            if result['valid'] and result['cost'] is not None:
-                print(f"[{completed}/{total_jobs}] {result['config_name']} Run{result['run']+1}: {result['cost']:.1f} ({result['exec_time']:.1f}s)")
+
+    # Choix du pool : on essaie ProcessPoolExecutor (meilleur pour CPU-bound) puis on retombe sur threads
+    use_processes = True
+    executor_cls = ProcessPoolExecutor if use_processes else ThreadPoolExecutor
+
+    try:
+        with executor_cls(max_workers=max_workers) as executor:
+            # Si on utilise des processus, on doit utiliser la version worker (picklable)
+            if executor_cls is ProcessPoolExecutor:
+                future_to_job = {
+                    executor.submit(
+                        run_single_ultra_quick_ga_worker,
+                        instance_path,
+                        job['config'],
+                        job['run'],
+                        job['config_name']
+                    ): job for job in jobs
+                }
             else:
-                error_msg = result.get('error', 'Invalide')
-                print(f"[{completed}/{total_jobs}] {result['config_name']} Run{result['run']+1}: ÉCHEC ({error_msg})")
+                # ThreadPoolExecutor : on peut réutiliser l'instance chargée
+                future_to_job = {
+                    executor.submit(
+                        run_single_ultra_quick_ga,
+                        instance,
+                        job['config'],
+                        job['run'],
+                        job['config_name']
+                    ): job for job in jobs
+                }
+
+            completed = 0
+            for future in as_completed(future_to_job):
+                result = future.result()
+                job_results.append(result)
+
+                completed += 1
+                job = future_to_job[future]
+
+                if result['valid'] and result['cost'] is not None:
+                    print(f"[{completed}/{total_jobs}] {result['config_name']} Run{result['run']+1}: {result['cost']:.1f} ({result['exec_time']:.1f}s)")
+                else:
+                    error_msg = result.get('error', 'Invalide')
+                    print(f"[{completed}/{total_jobs}] {result['config_name']} Run{result['run']+1}: ÉCHEC ({error_msg})")
+
+    except Exception as e:
+        # Fallback : si ProcessPool échoue (ex: problème de pickling), retomber sur threads
+        print(f"ProcessPoolExecutor failed ({e}), retombée sur ThreadPoolExecutor...")
+        job_results = []
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            future_to_job = {
+                executor.submit(
+                    run_single_ultra_quick_ga,
+                    instance,
+                    job['config'],
+                    job['run'],
+                    job['config_name']
+                ): job for job in jobs
+            }
+
+            completed = 0
+            for future in as_completed(future_to_job):
+                result = future.result()
+                job_results.append(result)
+
+                completed += 1
+                job = future_to_job[future]
+
+                if result['valid'] and result['cost'] is not None:
+                    print(f"[{completed}/{total_jobs}] {result['config_name']} Run{result['run']+1}: {result['cost']:.1f} ({result['exec_time']:.1f}s)")
+                else:
+                    error_msg = result.get('error', 'Invalide')
+                    print(f"[{completed}/{total_jobs}] {result['config_name']} Run{result['run']+1}: ÉCHEC ({error_msg})")
     
     total_time = time.time() - start_time
     
