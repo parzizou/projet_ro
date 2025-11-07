@@ -1,0 +1,228 @@
+## Protocole d'expérimentation — optimisation GA (CVRP)
+
+Introduction
+------------
+Voici le protocole que j'utilise pour évaluer les paramètres du GA et mesurer l'impact du parallélisme. Je l'ai écrit de façon concise pour pouvoir l'exécuter et l'automatiser facilement.
+
+Objectif
+--------
+Comparer la qualité (coût) et le temps d'exécution des configurations d'algorithme génétique :
+- différents jeux de paramètres (population, mutation, crossover, 2-opt),
+- différents modes d'exécution (séquentiel, threads, processes).
+
+Sorties
+-------
+Je produit des fichiers CSV horodatés dans `results/parameter_tests/` et un fichier agrégé `aggregated_results.csv`.
+
+Environnement
+-------------
+- OS : Windows (PowerShell)
+- Python : noter la version avec `python --version`
+- Résultats locaux : `results/parameter_tests/` (ignoré par Git)
+
+Données
+-------
+Je m'assure d'utiliser la même instance VRP (p.ex. `data/data.vrp`) pour toutes les expériences.
+
+Schéma des résultats (CSV)
+-------------------------
+Colonnes que je conserve systématiquement :
+- timestamp (ISO)
+- config_name
+- run_id
+- seed
+- workers
+- mode (sequential|threads|processes)
+- cost
+- elapsed_seconds
+- extra_params (JSON)
+- git_hash
+- python_version
+
+Design expérimental
+--------------------
+1) Rédiger `design.csv` listant les configurations à tester. Exemple :
+
+config_name,population_size,mutation_rate,use_2opt,time_limit
+pop_small,50,0.01,True,60
+pop_large,200,0.02,True,60
+
+2) Pour chaque configuration, lancer N répétitions (N >= 10 recommandé; N=5 acceptable pour pilote).
+3) Pour chaque répétition, exécuter au moins threads et processes (ajouter séquentiel si besoin).
+
+Exécution (exemples PowerShell)
+-------------------------------
+Exécution simple :
+
+PowerShell> python .\src\optimization\quick_test.py
+PowerShell> python .\src\optimization\ultra_quick_test.py
+
+Forcer 1 worker (ex. via variable d'environnement si script la lit) :
+
+PowerShell> $env:NUM_WORKERS = "1"; python .\src\optimization\quick_test.py
+
+Appel explicite avec options (si les scripts les supportent) :
+
+PowerShell> python .\src\optimization\quick_test.py --population_size 50 --mutation_rate 0.01 --time_limit 60 --workers 8 --mode threads
+
+Agrégation
+-----------
+Je collecte toutes les sorties individuelles dans `results/parameter_tests/` puis j'alimente `aggregated_results.csv` avec le schéma ci-dessus.
+
+Exemple d'append en Python :
+
+from datetime import datetime
+import csv
+
+row = {
+  'timestamp': datetime.utcnow().isoformat(),
+  'config_name': 'pop_small',
+  'run_id': 1,
+  'seed': 42,
+  'workers': 8,
+  'mode': 'threads',
+  'cost': 25006.0,
+  'elapsed_seconds': 15.1,
+  'extra_params': '{"population_size":50,"mutation_rate":0.01}',
+  'git_hash': 'abcdef1',
+  'python_version': '3.11.4'
+}
+
+with open('results/parameter_tests/aggregated_results.csv', 'a', newline='') as f:
+  writer = csv.DictWriter(f, fieldnames=list(row.keys()))
+  if f.tell() == 0:
+    writer.writeheader()
+  writer.writerow(row)
+
+Capture de l'environnement
+--------------------------
+Avant chaque campagne, je note :
+- git rev-parse --short HEAD
+- python --version
+- pip freeze > results/parameter_tests/requirements-YYYYmmdd.txt
+
+Instrumentation système (optionnel)
+-----------------------------------
+Pour CPU/RAM j'utilise `psutil` et j'échantillonne l'utilisation pendant l'exécution (moyenne/max).
+
+Analyses
+-------
+- Statistiques par configuration : mean, median, std, min, max pour cost et time.
+- Visualisations : boxplots (coût), barplots (temps moyen), courbes speedup.
+- Tests statistiques (Wilcoxon/t-test) si besoin.
+
+Bonnes pratiques
+----------------
+- Conserver `design.csv` et scripts d'orchestration dans le dépôt (mais pas `results/`).
+- Toujours commencer par un pilote (2–3 configs, N=3).
+- Mesurer l'overhead des processes sur Windows avant campagne longue.
+
+Paramètres de départ
+--------------------
+- population_size : [50, 100, 200]
+- mutation_rate : [0.005, 0.01, 0.02]
+- crossover_rate : [0.6, 0.8, 1.0]
+- use_2opt : [True, False]
+- time_limit : [15 (ultra), 60 (long tests)]
+
+Automatisation (optionnel)
+-------------------------
+Je peux ajouter un script `scripts/run_full_experiment.py` qui lit `design.csv`, exécute chaque config N fois pour chaque mode, et écrit `aggregated_results.csv`.
+
+Si vous voulez que je l'écrive, je le créé et lance un pilote pour vérifier.
+
+---
+
+Rédigé par moi — dites-moi si vous voulez que je précise le format exact du CSV, ajoute des exemples concrets de commandes ou que j'implémente l'orchestrateur.
+
+
+Informations ajoutées (format et exemples)
+----------------------------------------
+
+Format des fichiers de résultat (recommandé CSV)
+------------------------------------------------
+Colonnes recommandées (CSV) :
+- timestamp : horodatage ISO (YYYY-MM-DDTHH:MM:SS)
+- config_name : nom lisible de la configuration testée
+- run_id : identifiant de la répétition (ex. 1..N)
+- seed : graine aléatoire utilisée
+- workers : nombre de workers utilisés
+- mode : "sequential" | "threads" | "processes"
+- cost : coût observé pour cette exécution (float)
+- elapsed_seconds : temps d'exécution observé (float)
+- extra_params : JSON encodé des paramètres non standard (population_size, mutation_rate...)
+- git_hash : hash du commit (pour traçabilité)
+- python_version : sortie de `python --version`
+
+Exemple de design.csv (en-tête + deux configurations) :
+
+design.csv content:
+config_name,population_size,mutation_rate,use_2opt,time_limit
+pop_small,50,0.01,True,60
+pop_large,200,0.02,True,60
+
+Exemple minimal d'orchestrateur (pseudo-code Python)
+---------------------------------------------------
+Le but : lire `design.csv`, lancer chaque configuration N fois pour chaque mode et agréger dans un CSV central.
+
+Pseudo-code (description) :
+1. Lire design.csv en tant que liste de dicts.
+2. Pour chaque configuration et pour run_id in 1..N :
+   a. Construire la ligne de commande (ou arguments) pour le script de test. Exemple :
+    - python src/optimization/quick_test.py --population_size 50 --mutation_rate 0.01 --time_limit 60 --workers 8 --mode threads
+   b. Exécuter le script via subprocess.run() et mesurer la durée (ou laisser le script mesurer et écrire un fichier de sortie).
+   c. Récupérer/parse la sortie ou le fichier produit et extraire les champs coût et temps.
+   d. Enrichir la ligne avec git_hash et python_version et écrire dans results/parameter_tests/aggregated_results.csv
+
+Remarque : sur Windows, utilisez l'option shell=False et fournissez la commande comme liste d'arguments à subprocess.run().
+
+Commandes utiles pour capturer l'environnement
+----------------------------------------------
+PowerShell> git rev-parse --short HEAD
+PowerShell> python --version
+PowerShell> pip freeze > results/parameter_tests/requirements-YYYYmmdd.txt
+
+Instrumentation système (optionnel)
+-----------------------------------
+- Pour mesurer l'utilisation CPU/RAM par exécution, vous pouvez utiliser la bibliothèque `psutil` et enregistrer la moyenne/max CPU% pendant la durée d'exécution.
+- Exemple rapide (dans un script) : surveiller psutil.cpu_percent(interval=0.5) en boucle et stocker la moyenne.
+
+Recommandations de plages de paramètres (points de départ)
+----------------------------------------------------------
+- population_size : [50, 100, 200]
+- mutation_rate : [0.005, 0.01, 0.02]
+- crossover_rate : [0.6, 0.8, 1.0]
+- use_2opt : [True, False]
+- time_limit : [15 (ultra), 60 (long tests)]
+
+Exemple d'append de ligne de résultat en Python (very small snippet) :
+
+from datetime import datetime
+import csv
+
+row = {
+  'timestamp': datetime.utcnow().isoformat(),
+  'config_name': 'pop_small',
+  'run_id': 1,
+  'seed': 42,
+  'workers': 8,
+  'mode': 'threads',
+  'cost': 25006.0,
+  'elapsed_seconds': 15.1,
+  'extra_params': '{"population_size":50,"mutation_rate":0.01}',
+  'git_hash': 'abcdef1',
+  'python_version': '3.11.4'
+}
+
+with open('results/parameter_tests/aggregated_results.csv', 'a', newline='') as f:
+  writer = csv.DictWriter(f, fieldnames=list(row.keys()))
+  if f.tell() == 0:
+    writer.writeheader()
+  writer.writerow(row)
+
+Conseils pratiques
+-------------------
+- Toujours faire un pilote réduit (2-3 configurations, N=3) pour valider le pipeline avant une campagne longue.
+- Conserver le `design.csv` et les scripts d'orchestration dans le repository (mais pas le dossier `results/`).
+- Si vous automatisez, limitez le nombre de processus simultanés pour ne pas saturer la machine et fausser les mesures.
+
