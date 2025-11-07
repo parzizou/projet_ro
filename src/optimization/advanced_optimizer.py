@@ -15,6 +15,8 @@ import sys
 from typing import Dict, List, Tuple, Any
 from itertools import product
 import statistics
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from threading import Lock
 
 # Ajouter le répertoire parent au path pour les imports
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
@@ -79,68 +81,102 @@ class ParameterOptimizer:
             'use_2opt': [True]
         }
     
+    def run_single_ga_instance(
+        self,
+        params: Dict[str, Any],
+        run_id: int,
+        time_limit: float = 60.0,
+        generations: int = 50000
+    ) -> Tuple[int, int, float]:
+        """
+        Exécute une seule instance de l'algorithme génétique.
+        
+        Args:
+            params: Dictionnaire des paramètres à tester
+            run_id: Identifiant du run
+            time_limit: Limite de temps en secondes
+            generations: Nombre maximum de générations
+            
+        Returns:
+            Tuple (coût, nombre_véhicules, temps_exécution)
+        """
+        start_time = time.time()
+        
+        # Exécution de l'algorithme génétique
+        best_individual = genetic_algorithm(
+            inst=self.instance,
+            pop_size=params['pop_size'],
+            generations=generations,
+            tournament_k=params['tournament_k'],
+            elitism=params['elitism'],
+            pc=params['pc'],
+            pm=params['pm'],
+            use_2opt=params.get('use_2opt', False),
+            two_opt_prob=params.get('two_opt_prob', 1.0),
+            time_limit_sec=time_limit,
+            verbose=False,  # Désactiver verbose en mode multi-thread
+            seed=run_id * 1000  # Seed différent pour chaque run
+        )
+        
+        exec_time = time.time() - start_time
+        cost = best_individual.cost
+        num_veh = len(best_individual.routes)
+        
+        return cost, num_veh, exec_time
+
     def run_single_test(
         self, 
         params: Dict[str, Any], 
         num_runs: int = 3,
         time_limit: float = 60.0,
-        generations: int = 50000
+        generations: int = 50000,
+        max_workers: int = None
     ) -> Dict[str, Any]:
         """
-        Exécute un test avec des paramètres donnés.
+        Exécute un test avec des paramètres donnés (version multi-threadée).
         
         Args:
             params: Dictionnaire des paramètres à tester
             num_runs: Nombre d'exécutions pour obtenir une moyenne
             time_limit: Limite de temps en secondes pour chaque run
             generations: Nombre maximum de générations
+            max_workers: Nombre de threads (None = auto)
             
         Returns:
             Résultats du test avec statistiques
         """
+        print(f"\nTest avec paramètres: {params}")
+        
+        if max_workers is None:
+            max_workers = min(num_runs, os.cpu_count() or 1)
+        
         costs = []
         num_vehicles = []
         exec_times = []
         
-        print(f"\nTest avec paramètres: {params}")
-        
-        for run in range(num_runs):
-            print(f"  Run {run + 1}/{num_runs}...", end=" ", flush=True)
+        # Exécution parallèle des runs
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            # Soumission de tous les jobs
+            future_to_run = {
+                executor.submit(
+                    self.run_single_ga_instance,
+                    params, run_id, time_limit, generations
+                ): run_id for run_id in range(num_runs)
+            }
             
-            start_time = time.time()
-            
-            # Exécution de l'algorithme génétique
-            best_individual = genetic_algorithm(
-                inst=self.instance,
-                pop_size=params['pop_size'],
-                generations=generations,
-                tournament_k=params['tournament_k'],
-                elitism=params['elitism'],
-                pc=params['pc'],
-                pm=params['pm'],
-                seed=42 + run,  # Seed différent pour chaque run
-                use_2opt=params['use_2opt'],
-                verbose=False,  # Pas de verbose pour les tests
-                two_opt_prob=params['two_opt_prob'],
-                time_limit_sec=time_limit
-            )
-            
-            exec_time = time.time() - start_time
-            
-            # Vérification de la solution
-            is_valid, _ = verify_solution(best_individual.routes, self.instance)
-            if not is_valid:
-                print("INVALIDE!", flush=True)
-                continue
-            
-            cost = best_individual.cost
-            n_vehicles = len(best_individual.routes)
-            
-            costs.append(cost)
-            num_vehicles.append(n_vehicles)
-            exec_times.append(exec_time)
-            
-            print(f"Coût: {cost}, Véhicules: {n_vehicles}, Temps: {exec_time:.1f}s")
+            # Collecte des résultats
+            for future in as_completed(future_to_run):
+                run_id = future_to_run[future]
+                try:
+                    cost, num_veh, exec_time = future.result()
+                    costs.append(cost)
+                    num_vehicles.append(num_veh)
+                    exec_times.append(exec_time)
+                    
+                    print(f"  Run {run_id + 1}/{num_runs}... Coût: {cost}, Véhicules: {num_veh}, Temps: {exec_time:.1f}s")
+                    
+                except Exception as e:
+                    print(f"  Run {run_id + 1}/{num_runs}... ERREUR: {e}")
         
         if not costs:
             return None  # Aucun résultat valide
@@ -171,7 +207,8 @@ class ParameterOptimizer:
         num_runs: int = 3,
         time_limit: float = 60.0,
         generations: int = 50000,
-        max_combinations: int = None
+        max_combinations: int = None,
+        max_workers: int = None
     ) -> List[Dict[str, Any]]:
         """
         Effectue une recherche en grille sur l'espace des paramètres.
@@ -182,6 +219,7 @@ class ParameterOptimizer:
             time_limit: Limite de temps par run
             generations: Nombre maximum de générations
             max_combinations: Limite du nombre de combinaisons à tester
+            max_workers: Nombre de threads pour parallelisation (None = auto)
             
         Returns:
             Liste des résultats triés par performance
@@ -210,7 +248,7 @@ class ParameterOptimizer:
             params = dict(zip(param_names, combination))
             
             print(f"\n--- Combinaison {i + 1}/{len(combinations)} ---")
-            result = self.run_single_test(params, num_runs, time_limit, generations)
+            result = self.run_single_test(params, num_runs, time_limit, generations, max_workers)
             
             if result is not None:
                 results.append(result)
@@ -230,7 +268,8 @@ class ParameterOptimizer:
         num_tests: int = 20,
         num_runs: int = 3,
         time_limit: float = 60.0,
-        generations: int = 50000
+        generations: int = 50000,
+        max_workers: int = None
     ) -> List[Dict[str, Any]]:
         """
         Effectue une recherche aléatoire sur l'espace des paramètres.
@@ -241,6 +280,7 @@ class ParameterOptimizer:
             num_runs: Nombre d'exécutions par combinaison
             time_limit: Limite de temps par run
             generations: Nombre maximum de générations
+            max_workers: Nombre de threads pour parallelisation (None = auto)
             
         Returns:
             Liste des résultats triés par performance
@@ -262,7 +302,7 @@ class ParameterOptimizer:
                 params[param_name] = random.choice(param_values)
             
             print(f"\n--- Test aléatoire {i + 1}/{num_tests} ---")
-            result = self.run_single_test(params, num_runs, time_limit, generations)
+            result = self.run_single_test(params, num_runs, time_limit, generations, max_workers)
             
             if result is not None:
                 results.append(result)
@@ -351,6 +391,16 @@ def main():
     # Création de l'optimiseur
     optimizer = ParameterOptimizer(instance_path, target_optimum)
     
+    # Configuration du multi-threading
+    print(f"\nMulti-threading disponible: {os.cpu_count()} CPU cores détectés")
+    max_workers_input = input(f"Nombre de threads à utiliser (Enter pour auto-detect): ").strip()
+    max_workers = int(max_workers_input) if max_workers_input else None
+    
+    if max_workers:
+        print(f"Utilisation de {max_workers} threads")
+    else:
+        print(f"Auto-détection: {os.cpu_count()} threads")
+    
     # Choix du type de recherche
     print("\nType de recherche:")
     print("1. Recherche rapide (espace réduit)")
@@ -368,7 +418,8 @@ def main():
             num_runs=3,
             time_limit=45.0,
             generations=30000,
-            max_combinations=20
+            max_combinations=20,
+            max_workers=max_workers
         )
     
     elif choice == "2":
@@ -380,7 +431,8 @@ def main():
             num_runs=2,
             time_limit=60.0,
             generations=40000,
-            max_combinations=max_comb
+            max_combinations=max_comb,
+            max_workers=max_workers
         )
     
     elif choice == "3":
@@ -390,7 +442,8 @@ def main():
             num_tests=num_tests,
             num_runs=3,
             time_limit=60.0,
-            generations=40000
+            generations=40000,
+            max_workers=max_workers
         )
     
     elif choice == "4":

@@ -8,6 +8,7 @@ from __future__ import annotations
 import time
 import sys
 import os
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Ajouter le répertoire parent au path pour les imports
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
@@ -17,14 +18,59 @@ from src.core.ga import genetic_algorithm
 from src.core.solution import verify_solution
 
 
-def test_configuration(instance_path: str, config: dict, num_runs: int = 3):
+def run_single_ga(instance_path: str, config: dict, run_id: int):
     """
-    Teste une configuration spécifique de paramètres.
+    Exécute une seule instance de l'algorithme génétique.
+    
+    Args:
+        instance_path: Chemin vers le fichier .vrp
+        config: Configuration des paramètres
+        run_id: Identifiant du run
+        
+    Returns:
+        Tuple (coût, temps_exec, nombre_véhicules) ou None si invalide
+    """
+    # Chargement de l'instance
+    instance = load_cvrp_instance(instance_path)
+    
+    start_time = time.time()
+    
+    # Exécution de l'algorithme
+    best = genetic_algorithm(
+        inst=instance,
+        pop_size=config['pop_size'],
+        generations=config.get('generations', 30000),
+        tournament_k=config['tournament_k'],
+        elitism=config['elitism'],
+        pc=config['pc'],
+        pm=config['pm'],
+        seed=42 + run_id,
+        use_2opt=config['use_2opt'],
+        verbose=False,
+        two_opt_prob=config['two_opt_prob'],
+        time_limit_sec=config.get('time_limit', 30.0)
+    )
+    
+    exec_time = time.time() - start_time
+    
+    # Vérification
+    is_valid, _ = verify_solution(best.routes, instance)
+    
+    if is_valid:
+        return best.cost, exec_time, len(best.routes)
+    else:
+        return None
+
+
+def test_configuration(instance_path: str, config: dict, num_runs: int = 3, max_workers: int = None):
+    """
+    Teste une configuration spécifique de paramètres (version multi-threadée).
     
     Args:
         instance_path: Chemin vers le fichier .vrp
         config: Configuration des paramètres à tester
         num_runs: Nombre d'exécutions pour la moyenne
+        max_workers: Nombre de threads (None = auto)
         
     Returns:
         Dictionnaire avec les résultats du test
@@ -32,46 +78,36 @@ def test_configuration(instance_path: str, config: dict, num_runs: int = 3):
     print(f"\nTest de configuration: {config['name']}")
     print("-" * 50)
     
-    # Chargement de l'instance
-    instance = load_cvrp_instance(instance_path)
+    if max_workers is None:
+        max_workers = min(num_runs, os.cpu_count() or 1)
     
     costs = []
     times = []
     vehicles = []
     
-    for run in range(num_runs):
-        print(f"Run {run + 1}/{num_runs}...", end=" ")
+    # Exécution parallèle des runs
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        # Soumission de tous les jobs
+        future_to_run = {
+            executor.submit(run_single_ga, instance_path, config, run_id): run_id 
+            for run_id in range(num_runs)
+        }
         
-        start_time = time.time()
-        
-        # Exécution de l'algorithme
-        best = genetic_algorithm(
-            inst=instance,
-            pop_size=config['pop_size'],
-            generations=config.get('generations', 30000),
-            tournament_k=config['tournament_k'],
-            elitism=config['elitism'],
-            pc=config['pc'],
-            pm=config['pm'],
-            seed=42 + run,
-            use_2opt=config['use_2opt'],
-            verbose=False,
-            two_opt_prob=config['two_opt_prob'],
-            time_limit_sec=config.get('time_limit', 60.0)
-        )
-        
-        exec_time = time.time() - start_time
-        
-        # Vérification
-        is_valid, _ = verify_solution(best.routes, instance)
-        
-        if is_valid:
-            costs.append(best.cost)
-            times.append(exec_time)
-            vehicles.append(len(best.routes))
-            print(f"Coût: {best.cost}, Temps: {exec_time:.1f}s")
-        else:
-            print("SOLUTION INVALIDE!")
+        # Collecte des résultats
+        for future in as_completed(future_to_run):
+            run_id = future_to_run[future]
+            try:
+                result = future.result()
+                if result is not None:
+                    cost, exec_time, num_veh = result
+                    costs.append(cost)
+                    times.append(exec_time)
+                    vehicles.append(num_veh)
+                    print(f"Run {run_id + 1}/{num_runs}... Coût: {cost}, Temps: {exec_time:.1f}s")
+                else:
+                    print(f"Run {run_id + 1}/{num_runs}... SOLUTION INVALIDE!")
+            except Exception as e:
+                print(f"Run {run_id + 1}/{num_runs}... ERREUR: {e}")
     
     if costs:
         result = {
@@ -361,6 +397,11 @@ def main():
     print("=" * 50)
     print(f"Instance: {instance_path}")
     
+    # Configuration du multi-threading
+    print(f"\nMulti-threading: {os.cpu_count()} CPU cores détectés")
+    max_workers_input = input(f"Threads à utiliser (Enter = auto): ").strip()
+    max_workers = int(max_workers_input) if max_workers_input else None
+    
     # Choix du mode de test
     print("\nMode de test:")
     print("1. Test rapide (5 configurations prédéfinies)")
@@ -501,7 +542,7 @@ def main():
         print(f"CONFIGURATION {i+1}/{total_configs}")
         print(f"{'='*60}")
         
-        result = test_configuration(instance_path, config, num_runs=3)
+        result = test_configuration(instance_path, config, num_runs=3, max_workers=max_workers)
         results.append(result)
     
     # Filtrage des résultats valides
