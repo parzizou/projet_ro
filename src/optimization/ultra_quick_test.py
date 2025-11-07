@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 ultra_quick_test.py
-Test ultra-rapide pour validation préliminaire des paramètres (15s par run).
+Test ultra-rapide pour validation préliminaire des paramètres (60s par run).
 """
 
 from __future__ import annotations
@@ -9,6 +9,7 @@ import time
 import sys
 import os
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_completed
+import argparse
 
 # Ajouter le répertoire parent au path pour les imports
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
@@ -124,123 +125,40 @@ def save_ultra_quick_results(results: list, filename: str = None):
         timestamp = time.strftime("%Y%m%d_%H%M%S")
         filename = f"ultra_quick_results_{timestamp}.txt"
     
+    from datetime import datetime
     with open(filename, 'w', encoding='utf-8') as f:
-        from datetime import datetime
         f.write(f"# Résultats de tests ultra-rapides - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-        f.write("# Temps par run: 15 secondes, 2 runs par configuration\n")
+        f.write("# Temps par run: 60 secondes, 2 runs par configuration\n")
         f.write("# Format: config_name|param:value|avg_cost|min_cost|all_costs\n")
         f.write("#\n")
-        
+
         # Tri par coût moyen croissant
         sorted_results = sorted(results, key=lambda x: x['avg_cost'])
-        
+
         for result in sorted_results:
             line_parts = [result['name']]
-            
+
             # Ajout des paramètres modifiés
             for param, value in result['config'].items():
                 if param != 'name':
                     line_parts.append(f"{param}:{value}")
-            
+
             # Ajout des métriques
             line_parts.extend([
                 f"avg_cost:{result['avg_cost']:.1f}",
                 f"min_cost:{result['min_cost']}",
                 f"all_costs:[{','.join(map(str, result['costs']))}]"
             ])
-            
+
             f.write("|".join(line_parts) + "\n")
-    
+
     print(f"\nRésultats ultra-rapides sauvegardés dans: {filename}")
     return filename
 
 
-def save_ultra_quick_summary(results: list, filename: str = None):
-    """
-    Sauvegarde un résumé analysé des résultats ultra-rapides.
-    
-    Args:
-        results: Liste des résultats de tests
-        filename: Nom du fichier (généré automatiquement si None)
-    """
-    if not results:
-        print("Aucun résultat à analyser.")
-        return
-    
-    if filename is None:
-        import time
-        timestamp = time.strftime("%Y%m%d_%H%M%S")
-        filename = f"ultra_quick_summary_{timestamp}.txt"
-    
-    # Tri par coût moyen
-    sorted_results = sorted(results, key=lambda x: x['avg_cost'])
-    
-    with open(filename, 'w', encoding='utf-8') as f:
-        from datetime import datetime
-        f.write(f"# RÉSUMÉ ULTRA-RAPIDE - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-        f.write("# Tests de 15 secondes pour validation rapide des tendances\n")
-        f.write("#\n")
-        f.write("# CLASSEMENT PAR PERFORMANCE\n")
-        f.write("#" + "="*60 + "\n\n")
-        
-        for i, result in enumerate(sorted_results, 1):
-            f.write(f"RANG {i:2d}\n")
-            f.write(f"Configuration: {result['name']}\n")
-            f.write(f"Coût moyen:    {result['avg_cost']:.1f}\n")
-            f.write(f"Meilleur coût: {result['min_cost']}\n")
-            f.write(f"Tous les coûts: {result['costs']}\n")
-            f.write("Paramètres modifiés:\n")
-            
-            for param, value in result['config'].items():
-                if param != 'name':
-                    f.write(f"  {param:<15}: {value}\n")
-            
-            f.write("-" * 50 + "\n\n")
-        
-        # Analyse par paramètre
-        f.write("ANALYSE PAR PARAMÈTRE\n")
-        f.write("=" * 40 + "\n\n")
-        
-        parameter_analysis = {}
-        for result in sorted_results:
-            for param, value in result['config'].items():
-                if param != 'name':
-                    if param not in parameter_analysis:
-                        parameter_analysis[param] = []
-                    parameter_analysis[param].append((value, result['avg_cost']))
-        
-        for param, values in parameter_analysis.items():
-            if len(values) > 1:
-                sorted_values = sorted(values, key=lambda x: x[1])
-                best_val, best_cost = sorted_values[0]
-                worst_val, worst_cost = sorted_values[-1]
-                improvement = (worst_cost - best_cost) / worst_cost * 100
-                
-                f.write(f"{param.upper()}:\n")
-                f.write(f"  Meilleure valeur: {best_val} (coût: {best_cost:.1f})\n")
-                f.write(f"  Pire valeur: {worst_val} (coût: {worst_cost:.1f})\n")
-                f.write(f"  Amélioration: {improvement:.1f}%\n\n")
-        
-        # Recommandations
-        best_result = sorted_results[0]
-        f.write("RECOMMANDATIONS ULTRA-RAPIDES\n")
-        f.write("=" * 40 + "\n")
-        f.write(f"Meilleure configuration testée: {best_result['name']}\n")
-        f.write(f"Coût obtenu: {best_result['avg_cost']:.1f}\n")
-        f.write("Paramètres recommandés pour tests approfondis:\n")
-        for param, value in best_result['config'].items():
-            if param != 'name':
-                f.write(f"  {param} = {value}\n")
-        
-        f.write(f"\nNote: Résultats basés sur des tests de 15s seulement.\n")
-        f.write("Pour validation définitive, utilisez quick_parameter_test.py\n")
-    
-    print(f"Résumé ultra-rapide sauvegardé dans: {filename}")
-    return filename
 
 
-def ultra_quick_parameter_test(max_workers=None):
-    """Test ultra-rapide avec des paramètres représentatifs - VERSION MULTI-THREAD."""
+def ultra_quick_parameter_test(max_workers=None, output_dir=None):
     import multiprocessing
     
     if max_workers is None:
@@ -250,7 +168,7 @@ def ultra_quick_parameter_test(max_workers=None):
     
     print("TEST ULTRA-RAPIDE DE PARAMÈTRES GA (MULTI-THREAD)")
     print("=" * 60)
-    print("Temps par run: 15 secondes")
+    print("Temps par run: 60 secondes")
     print("Objectif: Validation rapide des tendances")
     print(f"Workers: {max_workers} threads")
     
@@ -293,7 +211,7 @@ def ultra_quick_parameter_test(max_workers=None):
         'pm': 0.25,
         'use_2opt': True,
         'two_opt_prob': 0.35,
-        'time_limit': 15.0,  # Ultra-rapide: 15s
+        'time_limit': 60.0,  # Ultra-rapide: 60s
         'generations': 50000  # Limité par temps
     }
     
@@ -439,8 +357,8 @@ def ultra_quick_parameter_test(max_workers=None):
                 'costs': data['costs']
             })
     
-    print(f"\nExécution terminée en {total_time:.1f}s (vs séquentiel ~{total_jobs*15:.0f}s)")
-    print(f"Accélération: {(total_jobs*15)/total_time:.1f}x")
+    print(f"\nExécution terminée en {total_time:.1f}s (vs séquentiel ~{total_jobs*60:.0f}s)")
+    print(f"Accélération: {(total_jobs*60)/total_time:.1f}x")
     
     # Analyse des résultats (identique à la version séquentielle)
     if final_results:
@@ -489,14 +407,24 @@ def ultra_quick_parameter_test(max_workers=None):
                 print(f"  {param}: {value}")
         
         # Sauvegarde des résultats
-        data_file = save_ultra_quick_results(final_results)
-        summary_file = save_ultra_quick_summary(final_results)
-        
+        # Utiliser dossier results/parameter_tests par défaut si présent
+        if output_dir is None:
+            output_dir = os.path.join('results', 'parameter_tests')
+        os.makedirs(output_dir, exist_ok=True)
+
+        import time as _time
+        timestamp = _time.strftime("%Y%m%d_%H%M%S")
+        data_fname = os.path.join(output_dir, f"ultra_quick_results_{timestamp}.txt")
+        summary_fname = os.path.join(output_dir, f"ultra_quick_summary_{timestamp}.txt")
+
+        data_file = save_ultra_quick_results(final_results, filename=data_fname)
+        summary_file = save_ultra_quick_summary(final_results, filename=summary_fname)
+
         print(f"\nFichiers générés:")
         print(f"- Données: {data_file}")
         print(f"- Résumé: {summary_file}")
-        
-        print(f"\nNote: Ces résultats sont basés sur des tests de 15s seulement.")
+
+        print(f"\nNote: Ces résultats sont basés sur des tests de 60s seulement.")
         print("Pour une analyse complète, utilisez 'quick_parameter_test.py'.")
         print(f"Temps total: {total_time:.1f}s avec {max_workers} threads")
     
@@ -507,30 +435,29 @@ def ultra_quick_parameter_test(max_workers=None):
 def save_ultra_quick_summary(results: list, filename: str = None):
     """
     Sauvegarde un résumé détaillé des résultats ultra-rapides.
-    
-    Args:
-        results: Liste des résultats triés par performance
-        filename: Nom du fichier de résumé
+
+    Le format est conçu pour être lisible et compréhensible par un humain. Le fichier
+    contient un classement par coût moyen, une liste complète des coûts par
+    configuration et une petite analyse par paramètre.
     """
     if not results:
-        return
-    
+        return None
+
     if filename is None:
         import time
         timestamp = time.strftime("%Y%m%d_%H%M%S")
         filename = f"ultra_quick_summary_{timestamp}.txt"
-    
-    # Tri par coût moyen
+
     sorted_results = sorted(results, key=lambda x: x['avg_cost'])
-    
+
     with open(filename, 'w', encoding='utf-8') as f:
         from datetime import datetime
         f.write(f"# RÉSUMÉ ULTRA-RAPIDE - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-        f.write("# Tests de 15 secondes pour validation rapide des tendances\n")
+        f.write("# Tests de 60 secondes pour validation rapide des tendances\n")
         f.write("#\n")
         f.write("# CLASSEMENT PAR PERFORMANCE\n")
         f.write("#" + "="*60 + "\n\n")
-        
+
         for i, result in enumerate(sorted_results, 1):
             f.write(f"RANG {i:2d}\n")
             f.write(f"Configuration: {result['name']}\n")
@@ -538,37 +465,35 @@ def save_ultra_quick_summary(results: list, filename: str = None):
             f.write(f"Meilleur coût: {result['min_cost']}\n")
             f.write(f"Tous les coûts: {result['costs']}\n")
             f.write("Paramètres modifiés:\n")
-            
+
             for param, value in result['config'].items():
                 if param != 'name':
                     f.write(f"  {param:<15}: {value}\n")
-            
+
             f.write("-" * 50 + "\n\n")
-        
+
         # Analyse par paramètre
         f.write("ANALYSE PAR PARAMÈTRE\n")
         f.write("=" * 40 + "\n\n")
-        
+
         parameter_analysis = {}
         for result in sorted_results:
             for param, value in result['config'].items():
                 if param != 'name':
-                    if param not in parameter_analysis:
-                        parameter_analysis[param] = []
-                    parameter_analysis[param].append((value, result['avg_cost']))
-        
+                    parameter_analysis.setdefault(param, []).append((value, result['avg_cost']))
+
         for param, values in parameter_analysis.items():
             if len(values) > 1:
                 sorted_values = sorted(values, key=lambda x: x[1])
                 best_val, best_cost = sorted_values[0]
                 worst_val, worst_cost = sorted_values[-1]
-                improvement = (worst_cost - best_cost) / worst_cost * 100
-                
+                improvement = (worst_cost - best_cost) / worst_cost * 100 if worst_cost else 0.0
+
                 f.write(f"{param.upper()}:\n")
                 f.write(f"  Meilleure valeur: {best_val} (coût: {best_cost:.1f})\n")
                 f.write(f"  Pire valeur: {worst_val} (coût: {worst_cost:.1f})\n")
                 f.write(f"  Amélioration: {improvement:.1f}%\n\n")
-        
+
         # Recommandations
         best_result = sorted_results[0]
         f.write("RECOMMANDATIONS ULTRA-RAPIDES\n")
@@ -579,28 +504,40 @@ def save_ultra_quick_summary(results: list, filename: str = None):
         for param, value in best_result['config'].items():
             if param != 'name':
                 f.write(f"  {param} = {value}\n")
-        
-        f.write(f"\nNote: Résultats basés sur des tests de 15s seulement.\n")
+
+        f.write(f"\nNote: Résultats basés sur des tests de 60s seulement.\n")
         f.write("Pour validation définitive, utilisez quick_parameter_test.py\n")
-    
+
     print(f"Résumé ultra-rapide sauvegardé dans: {filename}")
     return filename
 
 
 def main():
     """Fonction principale."""
+    parser = argparse.ArgumentParser(description='Ultra quick GA parameter validation')
+    parser.add_argument('--workers', type=int, default=None, help='Nombre de workers à utiliser (threads/processes)')
+    parser.add_argument('--output-dir', default=os.path.join('results', 'parameter_tests'), help='Dossier de sortie pour les résultats')
+    parser.add_argument('--yes', action='store_true', help='Lancer sans confirmation interactive')
+    args = parser.parse_args()
+
     print("VALIDATION ULTRA-RAPIDE DES PARAMÈTRES")
     print("Durée totale estimée: ~8-10 minutes")
     print("Objectif: Identifier rapidement les tendances prometteuses")
-    
-    confirm = input("\nLancer le test ultra-rapide? (y/n): ").strip().lower()
-    if confirm == 'y':
-        start_time = time.time()
-        ultra_quick_parameter_test()
-        total_time = time.time() - start_time
-        print(f"\nTest terminé en {total_time/60:.1f} minutes")
-    else:
-        print("Test annulé.")
+
+    if not args.yes:
+        confirm = input("\nLancer le test ultra-rapide? (y/n): ").strip().lower()
+        if confirm != 'y':
+            print("Test annulé.")
+            return
+
+    # Assurer le dossier de sortie
+    os.makedirs(args.output_dir, exist_ok=True)
+
+    start_time = time.time()
+    # Passer le nombre de workers et le dossier de sortie
+    ultra_quick_parameter_test(max_workers=args.workers, output_dir=args.output_dir)
+    total_time = time.time() - start_time
+    print(f"\nTest terminé en {total_time/60:.1f} minutes")
 
 
 if __name__ == "__main__":

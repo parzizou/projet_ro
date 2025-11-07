@@ -59,63 +59,115 @@ class ParameterResultsPlotter:
         
         with open(self.filename, 'r', encoding='utf-8') as f:
             lines = f.readlines()
-        
-        # Filtrer les lignes de commentaires
-        data_lines = [line.strip() for line in lines if not line.startswith('#') and line.strip()]
-        
+
+        # Filtrer les lignes de commentaires et ignorer les fences de code (```...`)
+        data_lines = [line.strip() for line in lines if line.strip() and not line.strip().startswith('#') and not line.strip().startswith('```')]
+
         for line in data_lines:
-            parts = line.split('|')
-            if len(parts) < 8:
+            parts = [p.strip() for p in line.split('|') if p.strip()]
+            # On attend au minimum le nom de configuration
+            if len(parts) < 1:
                 continue
-            
+
             result = {}
             result['config_name'] = parts[0]
-            
+
             # Parse des paramètres
             params = {}
             metrics_start = 1
+            # Les métriques connues servent de délimiteur entre paramètres et métriques
+            known_metric_keys = {'avg_cost', 'min_cost', 'max_cost', 'all_costs', 'cost_mean', 'cost_min', 'cost_max', 'num_valid_runs', 'vehicles', 'time'}
             for i, part in enumerate(parts[1:], 1):
-                if ':' in part and not part.startswith(('cost_', 'vehicles_', 'time_', 'num_', 'all_')):
+                if ':' in part:
                     key, value = part.split(':', 1)
-                    # Conversion du type
+                    key = key.strip()
+                    # Si la clé est une métrique connue, on arrête la lecture des paramètres
+                    if key in known_metric_keys:
+                        break
+
+                    # Conversion du type pour les paramètres
+                    value = value.strip()
                     if value.lower() == 'true':
                         params[key] = True
                     elif value.lower() == 'false':
                         params[key] = False
-                    elif '.' in value:
-                        try:
-                            params[key] = float(value)
-                        except ValueError:
-                            params[key] = value
                     else:
                         try:
-                            params[key] = int(value)
+                            if '.' in value:
+                                params[key] = float(value)
+                            else:
+                                params[key] = int(value)
                         except ValueError:
-                            params[key] = value
+                            try:
+                                params[key] = float(value)
+                            except ValueError:
+                                params[key] = value
+
                     metrics_start = i + 1
                 else:
                     break
-            
+
             result['parameters'] = params
-            
-            # Parse des métriques
+
+            # Parse des métriques (convertir les noms courants vers les clés internes attendues)
             for part in parts[metrics_start:]:
                 if ':' in part:
                     key, value = part.split(':', 1)
-                    if key.startswith('all_costs'):
-                        # Parse de la liste des coûts
+                    key = key.strip()
+                    value = value.strip()
+
+                    # Normalisation des noms de métriques
+                    if key in ('avg_cost', 'cost_mean'):
+                        target_key = 'cost_mean'
+                    elif key in ('min_cost', 'cost_min'):
+                        target_key = 'cost_min'
+                    elif key in ('max_cost', 'cost_max'):
+                        target_key = 'cost_max'
+                    elif key.startswith('all_costs'):
+                        target_key = 'all_costs'
+                    else:
+                        target_key = key
+
+                    # Parsing des listes (ex: [1,2,3])
+                    if target_key == 'all_costs':
                         costs_match = re.search(r'\[(.*?)\]', value)
                         if costs_match:
                             costs_str = costs_match.group(1)
-                            result['all_costs'] = [int(c) for c in costs_str.split(',') if c.strip()]
+                            costs = []
+                            for c in costs_str.split(','):
+                                c = c.strip()
+                                if not c:
+                                    continue
+                                try:
+                                    costs.append(int(c))
+                                except ValueError:
+                                    try:
+                                        costs.append(float(c))
+                                    except ValueError:
+                                        costs.append(c)
+                            result['all_costs'] = costs
+                        continue
+
+                    # Conversion numérique si possible
+                    if value.lower() == 'true':
+                        result[target_key] = True
+                    elif value.lower() == 'false':
+                        result[target_key] = False
                     else:
+                        # tenter int -> float -> fallback string
                         try:
-                            result[key] = float(value)
+                            if '.' in value:
+                                result[target_key] = float(value)
+                            else:
+                                result[target_key] = int(value)
                         except ValueError:
-                            result[key] = value
-            
+                            try:
+                                result[target_key] = float(value)
+                            except ValueError:
+                                result[target_key] = value
+
             self.results.append(result)
-        
+
         print(f"Chargé {len(self.results)} résultats depuis {self.filename}")
     
     def get_parameter_values(self, param_name: str) -> List[Any]:
@@ -980,13 +1032,93 @@ class ParameterResultsPlotter:
         print(f"Pire coût: {max(costs):.1f}")
         print(f"Amélioration possible: {(max(costs) - min(costs)) / max(costs) * 100:.1f}%")
         
-        # Top 3
+        # Top 3 et calcul des gaps
         sorted_results = sorted(self.results, key=lambda x: x['cost_mean'])
+        best_cost = sorted_results[0]['cost_mean']
+        
         print(f"\nTOP 3 CONFIGURATIONS:")
         for i, result in enumerate(sorted_results[:3]):
+            gap = (result['cost_mean'] - best_cost) / best_cost * 100 if best_cost > 0 else 0
+            
+            # Identifier le paramètre principal modifié
+            if len(result['parameters']) == 1:
+                param_name = list(result['parameters'].keys())[0]
+                param_value = result['parameters'][param_name]
+                modified_param = f"{param_name} = {param_value}"
+            elif len(result['parameters']) == 0:
+                modified_param = "Configuration de base (défaut)"
+            else:
+                modified_param = f"Paramètres multiples: {result['parameters']}"
+            
             print(f"\n{i+1}. {result['config_name']}")
             print(f"   Coût: {result['cost_mean']:.1f}")
-            print(f"   Paramètres: {result['parameters']}")
+            print(f"   Gap vs meilleur: {gap:.2f}%")
+            print(f"   Paramètre modifié: {modified_param}")
+        
+        # Tableau détaillé avec gaps pour toutes les configurations
+        print(f"\nTABLEAU DÉTAILLÉ (toutes configurations):")
+        print(f"{'='*95}")
+        print(f"{'Rang':<4} {'Configuration':<20} {'Coût':<8} {'Gap (%)':<8} {'Paramètre modifié':<25} {'Valeur':<15}")
+        print(f"{'-'*95}")
+        
+        for i, result in enumerate(sorted_results):
+            gap = (result['cost_mean'] - best_cost) / best_cost * 100 if best_cost > 0 else 0
+            
+            # Identifier le paramètre modifié (généralement il n'y en a qu'un seul dans ces tests)
+            if len(result['parameters']) == 1:
+                # Cas simple: un seul paramètre = celui qui est testé
+                param_name = list(result['parameters'].keys())[0]
+                param_value = result['parameters'][param_name]
+                param_str = param_name
+                value_str = str(param_value)
+            elif len(result['parameters']) == 0:
+                # Configuration de référence (tous paramètres par défaut)
+                param_str = "Configuration de base"
+                value_str = "défaut"
+            else:
+                # Plusieurs paramètres: essayer d'identifier le principal via le nom de config
+                config_name_lower = result['config_name'].lower()
+                param_str = "Multiple"
+                value_str = "Voir détails"
+                
+                # Heuristiques basées sur les noms de configurations courantes
+                if 'elitism' in config_name_lower or 'elite' in config_name_lower:
+                    if 'elitism' in result['parameters']:
+                        param_str = 'elitism'
+                        value_str = str(result['parameters']['elitism'])
+                elif 'tournament' in config_name_lower:
+                    if 'tournament_k' in result['parameters']:
+                        param_str = 'tournament_k'
+                        value_str = str(result['parameters']['tournament_k'])
+                elif 'pop' in config_name_lower or 'population' in config_name_lower:
+                    if 'pop_size' in result['parameters']:
+                        param_str = 'pop_size'
+                        value_str = str(result['parameters']['pop_size'])
+                elif 'crossover' in config_name_lower or 'pc' in config_name_lower:
+                    if 'pc' in result['parameters']:
+                        param_str = 'pc'
+                        value_str = str(result['parameters']['pc'])
+                elif 'mutation' in config_name_lower or 'pm' in config_name_lower:
+                    if 'pm' in result['parameters']:
+                        param_str = 'pm'
+                        value_str = str(result['parameters']['pm'])
+                elif '2opt' in config_name_lower:
+                    if 'two_opt_prob' in result['parameters']:
+                        param_str = 'two_opt_prob'
+                        value_str = str(result['parameters']['two_opt_prob'])
+                    elif 'use_2opt' in result['parameters']:
+                        param_str = 'use_2opt'
+                        value_str = str(result['parameters']['use_2opt'])
+                else:
+                    # Prendre le premier paramètre
+                    first_key = list(result['parameters'].keys())[0]
+                    param_str = first_key
+                    value_str = str(result['parameters'][first_key])
+            
+            print(f"{i+1:<4} {result['config_name']:<20} {result['cost_mean']:<8.1f} {gap:<8.2f} {param_str:<25} {value_str:<15}")
+        
+        print(f"{'-'*95}")
+        print(f"Note: Gap = (Coût - Meilleur) / Meilleur × 100%")
 
 
 def main():
@@ -999,16 +1131,26 @@ def main():
     
     # Sélection du fichier de résultats
     print("\nFichiers de résultats disponibles:")
+
+    # Chercher dans le dossier courant puis dans results/parameter_tests/
     result_files = [f for f in os.listdir('.') if f.startswith('parameter_test_results_') and f.endswith('.txt')]
-    
+    results_dir = os.path.join('results', 'parameter_tests')
+    if os.path.isdir(results_dir):
+        for f in os.listdir(results_dir):
+            if f.startswith('parameter_test_results_') and f.endswith('.txt'):
+                result_files.append(os.path.join(results_dir, f))
+
+    # Dédupliquer
+    result_files = sorted(list(dict.fromkeys(result_files)))
+
     if not result_files:
-        print("Aucun fichier de résultats trouvé.")
-        filename = input("Entrez le nom du fichier manuellement: ").strip()
+        print("Aucun fichier de résultats trouvé dans le répertoire courant ni dans results/parameter_tests/.")
+        filename = input("Entrez le nom du fichier manuellement (chemin relatif possible): ").strip()
     else:
         for i, f in enumerate(result_files):
             print(f"{i+1}. {f}")
         
-        choice = input(f"\nChoisissez un fichier (1-{len(result_files)}) ou entrez un nom: ").strip()
+        choice = input(f"\nChoisissez un fichier (1-{len(result_files)}) ou entrez un nom/chemin: ").strip()
         
         try:
             idx = int(choice) - 1
@@ -1018,6 +1160,11 @@ def main():
                 filename = choice
         except ValueError:
             filename = choice
+
+    # Normaliser le chemin entré par l'utilisateur
+    filename = filename.strip('"')
+    if not os.path.isabs(filename):
+        filename = os.path.normpath(filename)
     
     # Création du plotter
     try:

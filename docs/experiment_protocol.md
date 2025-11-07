@@ -73,18 +73,48 @@ pop_large,200,0.02,True,60
 
 Exécution (exemples PowerShell)
 -------------------------------
-Exécution simple :
+**Tests rapides (validation des tendances) :**
+```powershell
+# Test ultra-rapide avec multiprocessing
+python src/optimization/ultra_quick_test.py --workers 4 --output-dir results/parameter_tests --yes
 
-PowerShell> python .\src\optimization\quick_test.py
-PowerShell> python .\src\optimization\ultra_quick_test.py
+# Test avec ThreadPoolExecutor (fallback)
+python src/optimization/ultra_quick_test.py --workers 2 --output-dir results/parameter_tests
+```
 
-Forcer 1 worker (ex. via variable d'environnement si script la lit) :
+**Tests complets (exploration systématique) :**
+```powershell  
+# Tous les tests (59 indépendants + 5 combinés)
+python src/optimization/quick_test.py --workers 4 --output-dir results/parameter_tests
 
-PowerShell> $env:NUM_WORKERS = "1"; python .\src\optimization\quick_test.py
+# Test d'une instance spécifique
+python src/optimization/quick_test.py --instance data/instances/data.vrp --workers 2
+```
 
-Appel explicite avec options (si les scripts les supportent) :
+**Visualisation des résultats :**
+```powershell
+# Interface interactive complète
+python src/visualization/plot_results.py
 
-PowerShell> python .\src\optimization\quick_test.py --population_size 50 --mutation_rate 0.01 --time_limit 60 --workers 8 --mode threads
+# Analyse directe via script
+python -c "
+import importlib.util
+spec = importlib.util.spec_from_file_location('pr', r'src/visualization/plot_results.py')
+mod = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(mod)
+p = mod.ParameterResultsPlotter(r'results/parameter_tests/ultra_quick_results_YYYYMMDD_HHMMSS.txt')
+p.print_summary_stats()
+"
+```
+
+**Nettoyage et maintenance :**
+```powershell
+# Supprimer les caches Python
+Remove-Item -Recurse -Force __pycache__
+
+# Lister les résultats disponibles  
+Get-ChildItem results/parameter_tests/ -Name "*.txt" | Sort-Object
+```
 
 Agrégation
 -----------
@@ -126,10 +156,53 @@ Instrumentation système (optionnel)
 -----------------------------------
 Pour CPU/RAM j'utilise `psutil` et j'échantillonne l'utilisation pendant l'exécution (moyenne/max).
 
-Analyses
--------
+Analyses et visualisation
+-----------------------
+**Statistiques disponibles :**
 - Statistiques par configuration : mean, median, std, min, max pour cost et time.
-- Visualisations : boxplots (coût), barplots (temps moyen), courbes speedup.
+- **Gap analysis** : Calcul automatique du gap (%) par rapport à la meilleure configuration : `Gap = (Coût - Meilleur) / Meilleur × 100%`
+- **Identification des paramètres** : Affichage automatique du paramètre modifié pour chaque test
+
+**Outils de visualisation :**
+- Script `src/visualization/plot_results.py` : Interface interactive complète
+- Boxplots (coût), barplots (temps moyen), courbes speedup
+- Heatmaps de performance, grilles d'histogrammes
+- Comparaison meilleure vs pire configuration
+
+**Nouvelles fonctionnalités d'analyse (novembre 2025) :**
+1. **Statistiques de synthèse enrichies** :
+   - TOP 3 configurations avec gaps calculés
+   - Tableau détaillé de TOUTES les configurations classées par performance
+   - Identification automatique du paramètre testé pour chaque configuration
+   
+2. **Format de sortie compatible** :
+   - Support des formats `avg_cost`/`min_cost` et `all_costs` 
+   - Parsing robuste des fichiers CSV avec fences de code Markdown
+   
+3. **Exemple de sortie des statistiques de synthèse** :
+   ```
+   TOP 3 CONFIGURATIONS:
+   1. Elitism_Medium - Coût: 23340.5 - Gap vs meilleur: 0.00% - Paramètre modifié: elitism = 6
+   2. 2opt_Low - Coût: 23673.5 - Gap vs meilleur: 1.43% - Paramètre modifié: two_opt_prob = 0.2
+   3. Mutation_Low - Coût: 23737.0 - Gap vs meilleur: 1.70% - Paramètre modifié: pm = 0.15
+   
+   TABLEAU DÉTAILLÉ (toutes configurations):
+   Rang Configuration        Coût     Gap (%)  Paramètre modifié         Valeur
+   1    Elitism_Medium       23340.5  0.00     elitism                   6
+   2    2opt_Low             23673.5  1.43     two_opt_prob              0.2
+   ...
+   ```
+
+**Usage du visualiseur :**
+```powershell
+python src/visualization/plot_results.py
+# Menu interactif pour :
+# 1. Statistiques de synthèse (avec gaps et paramètres)
+# 2. Impact détaillé par paramètre
+# 3. Comparaisons graphiques
+# 4-7. Visualisations avancées (heatmaps, etc.)
+```
+
 - Tests statistiques (Wilcoxon/t-test) si besoin.
 
 Bonnes pratiques
@@ -138,13 +211,44 @@ Bonnes pratiques
 - Toujours commencer par un pilote (2–3 configs, N=3).
 - Mesurer l'overhead des processes sur Windows avant campagne longue.
 
-Paramètres de départ
---------------------
-- population_size : [50, 100, 200]
-- mutation_rate : [0.005, 0.01, 0.02]
-- crossover_rate : [0.6, 0.8, 1.0]
-- use_2opt : [True, False]
-- time_limit : [15 (ultra), 60 (long tests)]
+Scripts de test disponibles
+--------------------------
+**1. `ultra_quick_test.py` - Tests indépendants rapides**
+- **Stratégie** : 1 seul paramètre modifié à la fois (tests indépendants)  
+- **Durée** : 60s par configuration, 2 runs par config
+- **Objectif** : Validation rapide des tendances
+- **Usage** : `python src/optimization/ultra_quick_test.py --workers 4 --output-dir results/parameter_tests`
+
+**2. `quick_test.py` - Tests systématiques étendus**
+- **Stratégie** : Mix de tests indépendants (92%) + combinaisons (8%)
+- **Tests indépendants** : 59 configurations (1 paramètre varié)
+- **Tests combinés** : 5 configurations prometteuses (6 paramètres simultanés)
+- **Durée** : 60s par configuration  
+- **Usage** : `python src/optimization/quick_test.py --workers 4`
+
+**Paramètres testés systématiquement :**
+- **pop_size** : [40, 60, 80, 100, 120, 140, 160, 180, 200] (9 valeurs)
+- **tournament_k** : [2, 3, 4, 5, 6, 7, 8] (7 valeurs)
+- **elitism** : [1, 2, 3, 4, 5, 6, 8, 10, 12, 15] (10 valeurs)
+- **pc (crossover)** : [0.7, 0.75, 0.8, 0.85, 0.9, 0.92, 0.95, 0.97, 0.98, 0.99] (10 valeurs)
+- **pm (mutation)** : [0.05, 0.1, 0.15, 0.2, 0.22, 0.25, 0.27, 0.3, 0.35, 0.4] (10 valeurs)  
+- **two_opt_prob** : [0.0, 0.1, 0.2, 0.3, 0.35, 0.4, 0.5, 0.6, 0.65, 0.7, 0.8] (11 valeurs)
+- **use_2opt** : [True, False] (2 valeurs)
+
+**Configuration de base (référence) :**
+```python
+base_config = {
+    'pop_size': 100,
+    'tournament_k': 4, 
+    'elitism': 4,
+    'pc': 0.95,
+    'pm': 0.25,
+    'use_2opt': True,
+    'two_opt_prob': 0.35,
+    'time_limit': 60.0,
+    'generations': 50000
+}
+```
 
 Automatisation (optionnel)
 -------------------------

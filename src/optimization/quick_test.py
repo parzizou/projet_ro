@@ -9,6 +9,7 @@ import time
 import sys
 import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import argparse
 
 # Ajouter le répertoire parent au path pour les imports
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
@@ -389,18 +390,34 @@ def generate_extended_parameter_variations():
             configurations.append(config)
     
     return configurations
+def parse_args():
+    p = argparse.ArgumentParser(description='Quick parameter testing for GA')
+    p.add_argument('--instance', default='data/instances/data.vrp', help='Chemin vers le fichier .vrp')
+    p.add_argument('--workers', type=int, default=None, help='Nombre de threads à utiliser (default: auto)')
+    p.add_argument('--output-dir', default=os.path.join('results', 'parameter_tests'), help='Dossier de sortie pour les résultats')
+    p.add_argument('--non-interactive', action='store_true', help='Mode non interactif (utilise valeurs par défaut)')
+    return p.parse_args()
+
+
 def main():
     """Fonction principale pour les tests de paramètres."""
-    instance_path = "data/instances/data.vrp"  # Chemin vers l'instance
-    
+    args = parse_args()
+    instance_path = args.instance
+    output_dir = args.output_dir
+
+    os.makedirs(output_dir, exist_ok=True)
+
     print("TEST SYSTÉMATIQUE DE PARAMÈTRES GA")
     print("=" * 50)
     print(f"Instance: {instance_path}")
     
     # Configuration du multi-threading
     print(f"\nMulti-threading: {os.cpu_count()} CPU cores détectés")
-    max_workers_input = input(f"Threads à utiliser (Enter = auto): ").strip()
-    max_workers = int(max_workers_input) if max_workers_input else None
+    if args.non_interactive:
+        max_workers = args.workers
+    else:
+        max_workers_input = input(f"Threads à utiliser (Enter = auto): ").strip()
+        max_workers = int(max_workers_input) if max_workers_input else args.workers
     
     # Choix du mode de test
     print("\nMode de test:")
@@ -551,22 +568,22 @@ def main():
     if valid_results:
         # Tri par coût moyen
         valid_results.sort(key=lambda x: x['cost_mean'])
-        
+
         # Sauvegarde des résultats
         timestamp = time.strftime("%Y%m%d_%H%M%S")
-        filename = f"parameter_test_results_{timestamp}.txt"
-        best_summary_filename = f"best_results_summary_{timestamp}.txt"
-        
+        filename = os.path.join(output_dir, f"parameter_test_results_{timestamp}.txt")
+        best_summary_filename = os.path.join(output_dir, f"best_results_summary_{timestamp}.txt")
+
         save_results_to_file(valid_results, filename)
         save_best_results_summary(valid_results, best_summary_filename)
-        
+
         # Affichage du résumé
         print(f"\n{'='*60}")
         print("RÉSUMÉ DES RÉSULTATS")
         print(f"{'='*60}")
         print(f"Configurations testées: {total_configs}")
         print(f"Résultats valides: {len(valid_results)}")
-        
+
         if len(valid_results) >= 3:
             print(f"\nTOP 3 MEILLEURES CONFIGURATIONS:")
             for i, result in enumerate(valid_results[:3]):
@@ -575,7 +592,7 @@ def main():
                 print(f"Coût moyen: {result['cost_mean']:.1f}")
                 print(f"Meilleur coût: {result['cost_min']}")
                 print(f"Écart-type: {result['cost_std']:.2f}")
-        
+
         print(f"\nDonnées sauvegardées dans: {filename}")
         print("Utilisez 'plot_parameter_results.py' pour générer des graphiques.")
     else:
