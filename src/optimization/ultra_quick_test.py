@@ -8,6 +8,7 @@ from __future__ import annotations
 import time
 import sys
 import os
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Ajouter le répertoire parent au path pour les imports
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
@@ -15,6 +16,48 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 from src.core.cvrp_data import load_cvrp_instance
 from src.core.ga import genetic_algorithm
 from src.core.solution import verify_solution
+
+
+def run_single_ultra_quick_ga(instance, config, run, config_name):
+    """Exécute un seul run GA dans un thread séparé."""
+    try:
+        start_time = time.time()
+        
+        best = genetic_algorithm(
+            inst=instance,
+            pop_size=config['pop_size'],
+            generations=config['generations'],
+            tournament_k=config['tournament_k'],
+            elitism=config['elitism'],
+            pc=config['pc'],
+            pm=config['pm'],
+            seed=42 + run,
+            use_2opt=config['use_2opt'],
+            verbose=False,
+            two_opt_prob=config['two_opt_prob'],
+            time_limit_sec=config['time_limit']
+        )
+        
+        exec_time = time.time() - start_time
+        is_valid, _ = verify_solution(best.routes, instance)
+        
+        return {
+            'config_name': config_name,
+            'run': run,
+            'cost': best.cost if is_valid else None,
+            'valid': is_valid,
+            'exec_time': exec_time
+        }
+        
+    except Exception as e:
+        return {
+            'config_name': config_name,
+            'run': run,
+            'cost': None,
+            'valid': False,
+            'error': str(e),
+            'exec_time': 0
+        }
 
 
 def save_ultra_quick_results(results: list, filename: str = None):
@@ -149,14 +192,20 @@ def save_ultra_quick_summary(results: list, filename: str = None):
     return filename
 
 
-def ultra_quick_parameter_test():
-    """Test ultra-rapide avec des paramètres représentatifs."""
+def ultra_quick_parameter_test(max_workers=None):
+    """Test ultra-rapide avec des paramètres représentatifs - VERSION MULTI-THREAD."""
+    import multiprocessing
+    
+    if max_workers is None:
+        max_workers = min(multiprocessing.cpu_count(), 8)
+    
     instance_path = "data/instances/data.vrp"
     
-    print("TEST ULTRA-RAPIDE DE PARAMÈTRES GA")
-    print("=" * 50)
+    print("TEST ULTRA-RAPIDE DE PARAMÈTRES GA (MULTI-THREAD)")
+    print("=" * 60)
     print("Temps par run: 15 secondes")
     print("Objectif: Validation rapide des tendances")
+    print(f"Workers: {max_workers} threads")
     
     # Configurations représentatives pour test rapide
     quick_configs = [
@@ -207,79 +256,116 @@ def ultra_quick_parameter_test():
     results = []
     total_configs = len(quick_configs)
     
-    print(f"\nTest de {total_configs} configurations...")
+    print(f"\nTest de {total_configs} configurations avec 2 runs chacune...")
+    print("Exécution en parallèle...")
     
+    # Préparation de tous les jobs
+    jobs = []
     for i, test_config in enumerate(quick_configs):
-        print(f"\n--- Config {i+1}/{total_configs}: {test_config['name']} ---")
-        
-        # Fusion avec config de base
         config = base_config.copy()
         config.update({k: v for k, v in test_config.items() if k != 'name'})
         
-        costs = []
-        
-        # 2 runs seulement pour le test ultra-rapide
+        # 2 runs par configuration
         for run in range(2):
-            print(f"Run {run+1}/2...", end=" ")
-            
-            start_time = time.time()
-            
-            best = genetic_algorithm(
-                inst=instance,
-                pop_size=config['pop_size'],
-                generations=config['generations'],
-                tournament_k=config['tournament_k'],
-                elitism=config['elitism'],
-                pc=config['pc'],
-                pm=config['pm'],
-                seed=42 + run,
-                use_2opt=config['use_2opt'],
-                verbose=False,
-                two_opt_prob=config['two_opt_prob'],
-                time_limit_sec=config['time_limit']
-            )
-            
-            exec_time = time.time() - start_time
-            
-            is_valid, _ = verify_solution(best.routes, instance)
-            
-            if is_valid:
-                costs.append(best.cost)
-                print(f"Coût: {best.cost}, Temps: {exec_time:.1f}s")
-            else:
-                print("INVALIDE!")
+            jobs.append({
+                'config_idx': i,
+                'config_name': test_config['name'],
+                'config': config,
+                'run': run
+            })
+    
+    total_jobs = len(jobs)
+    print(f"Total jobs: {total_jobs} (exécution en {max_workers} threads)")
+    
+    # Exécution multi-thread
+    start_time = time.time()
+    job_results = []
+    
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        # Soumission de tous les jobs
+        future_to_job = {
+            executor.submit(
+                run_single_ultra_quick_ga,
+                instance,
+                job['config'],
+                job['run'],
+                job['config_name']
+            ): job for job in jobs
+        }
         
-        if costs:
-            avg_cost = sum(costs) / len(costs)
-            min_cost = min(costs)
-            results.append({
-                'name': test_config['name'],
-                'config': test_config,
+        completed = 0
+        for future in as_completed(future_to_job):
+            result = future.result()
+            job_results.append(result)
+            
+            completed += 1
+            job = future_to_job[future]
+            
+            if result['valid'] and result['cost'] is not None:
+                print(f"[{completed}/{total_jobs}] {result['config_name']} Run{result['run']+1}: {result['cost']:.1f} ({result['exec_time']:.1f}s)")
+            else:
+                error_msg = result.get('error', 'Invalide')
+                print(f"[{completed}/{total_jobs}] {result['config_name']} Run{result['run']+1}: ÉCHEC ({error_msg})")
+    
+    total_time = time.time() - start_time
+    
+    # Regroupement des résultats par configuration
+    config_results = {}
+    for result in job_results:
+        config_name = result['config_name']
+        if config_name not in config_results:
+            config_results[config_name] = {
+                'name': config_name,
+                'costs': [],
+                'config': None
+            }
+        
+        if result['valid'] and result['cost'] is not None:
+            config_results[config_name]['costs'].append(result['cost'])
+        
+        # Récupérer la config depuis le job original
+        if config_results[config_name]['config'] is None:
+            for job in jobs:
+                if job['config_name'] == config_name:
+                    config_results[config_name]['config'] = next(
+                        cfg for cfg in quick_configs if cfg['name'] == config_name
+                    )
+                    break
+    
+    # Calcul des statistiques finales
+    final_results = []
+    for config_name, data in config_results.items():
+        if data['costs']:
+            avg_cost = sum(data['costs']) / len(data['costs'])
+            min_cost = min(data['costs'])
+            final_results.append({
+                'name': config_name,
+                'config': data['config'],
                 'avg_cost': avg_cost,
                 'min_cost': min_cost,
-                'costs': costs
+                'costs': data['costs']
             })
-            print(f"  → Coût moyen: {avg_cost:.1f}, Meilleur: {min_cost}")
-        else:
-            print("  → Aucun résultat valide")
     
-    # Analyse des résultats
-    if results:
+    print(f"\nExécution terminée en {total_time:.1f}s (vs séquentiel ~{total_jobs*15:.0f}s)")
+    print(f"Accélération: {(total_jobs*15)/total_time:.1f}x")
+    
+    # Analyse des résultats (identique à la version séquentielle)
+    if final_results:
         print(f"\n{'='*60}")
-        print("RÉSULTATS ULTRA-RAPIDES")
+        print("RÉSULTATS ULTRA-RAPIDES (MULTI-THREAD)")
         print(f"{'='*60}")
         
         # Tri par coût moyen
-        results.sort(key=lambda x: x['avg_cost'])
+        final_results.sort(key=lambda x: x['avg_cost'])
         
         print("\nCLASSEMENT (par coût moyen):")
-        for i, result in enumerate(results, 1):
+        for i, result in enumerate(final_results, 1):
             print(f"{i:2d}. {result['name']:<20} | Coût: {result['avg_cost']:7.1f} | Meilleur: {result['min_cost']}")
         
         # Analyse par type de paramètre
         parameter_analysis = {}
         
-        for result in results:
+        for result in final_results:
             for param, value in result['config'].items():
                 if param != 'name':
                     if param not in parameter_analysis:
@@ -300,7 +386,7 @@ def ultra_quick_parameter_test():
                 print(f"  Amélioration: {improvement:.1f}%")
         
         # Recommandations rapides
-        best_result = results[0]
+        best_result = final_results[0]
         print(f"\nRECOMMENDATION RAPIDE:")
         print(f"Configuration: {best_result['name']}")
         print(f"Coût obtenu: {best_result['avg_cost']:.1f}")
@@ -310,8 +396,8 @@ def ultra_quick_parameter_test():
                 print(f"  {param}: {value}")
         
         # Sauvegarde des résultats
-        data_file = save_ultra_quick_results(results)
-        summary_file = save_ultra_quick_summary(results)
+        data_file = save_ultra_quick_results(final_results)
+        summary_file = save_ultra_quick_summary(final_results)
         
         print(f"\nFichiers générés:")
         print(f"- Données: {data_file}")
@@ -319,6 +405,7 @@ def ultra_quick_parameter_test():
         
         print(f"\nNote: Ces résultats sont basés sur des tests de 15s seulement.")
         print("Pour une analyse complète, utilisez 'quick_parameter_test.py'.")
+        print(f"Temps total: {total_time:.1f}s avec {max_workers} threads")
     
     else:
         print("Aucun résultat valide obtenu.")
@@ -405,181 +492,6 @@ def save_ultra_quick_summary(results: list, filename: str = None):
     
     print(f"Résumé ultra-rapide sauvegardé dans: {filename}")
     return filename
-
-
-def ultra_quick_parameter_test():
-    """Test ultra-rapide avec des paramètres représentatifs."""
-    instance_path = "data/instances/data.vrp"
-    
-    print("TEST ULTRA-RAPIDE DE PARAMÈTRES GA")
-    print("=" * 50)
-    print("Temps par run: 15 secondes")
-    print("Objectif: Validation rapide des tendances")
-    
-    # Configurations représentatives pour test rapide
-    quick_configs = [
-        # Population
-        {'pop_size': 60, 'name': 'Pop_Small'},
-        {'pop_size': 100, 'name': 'Pop_Medium'},
-        {'pop_size': 150, 'name': 'Pop_Large'},
-        
-        # Tournament
-        {'tournament_k': 2, 'name': 'Tournament_Low'},
-        {'tournament_k': 4, 'name': 'Tournament_Medium'},
-        {'tournament_k': 6, 'name': 'Tournament_High'},
-        
-        # Élitisme
-        {'elitism': 2, 'name': 'Elitism_Low'},
-        {'elitism': 6, 'name': 'Elitism_Medium'},
-        {'elitism': 12, 'name': 'Elitism_High'},
-        
-        # Crossover
-        {'pc': 0.8, 'name': 'Crossover_Low'},
-        {'pc': 0.95, 'name': 'Crossover_High'},
-        
-        # Mutation
-        {'pm': 0.15, 'name': 'Mutation_Low'},
-        {'pm': 0.35, 'name': 'Mutation_High'},
-        
-        # 2-opt
-        {'two_opt_prob': 0.2, 'name': '2opt_Low'},
-        {'two_opt_prob': 0.6, 'name': '2opt_High'},
-        {'use_2opt': False, 'name': 'No_2opt'},
-    ]
-    
-    base_config = {
-        'pop_size': 100,
-        'tournament_k': 4,
-        'elitism': 4,
-        'pc': 0.95,
-        'pm': 0.25,
-        'use_2opt': True,
-        'two_opt_prob': 0.35,
-        'time_limit': 15.0,  # Ultra-rapide: 15s
-        'generations': 50000  # Limité par temps
-    }
-    
-    # Chargement de l'instance
-    instance = load_cvrp_instance(instance_path)
-    
-    results = []
-    total_configs = len(quick_configs)
-    
-    print(f"\nTest de {total_configs} configurations...")
-    
-    for i, test_config in enumerate(quick_configs):
-        print(f"\n--- Config {i+1}/{total_configs}: {test_config['name']} ---")
-        
-        # Fusion avec config de base
-        config = base_config.copy()
-        config.update({k: v for k, v in test_config.items() if k != 'name'})
-        
-        costs = []
-        
-        # 2 runs seulement pour le test ultra-rapide
-        for run in range(2):
-            print(f"Run {run+1}/2...", end=" ")
-            
-            start_time = time.time()
-            
-            best = genetic_algorithm(
-                inst=instance,
-                pop_size=config['pop_size'],
-                generations=config['generations'],
-                tournament_k=config['tournament_k'],
-                elitism=config['elitism'],
-                pc=config['pc'],
-                pm=config['pm'],
-                seed=42 + run,
-                use_2opt=config['use_2opt'],
-                verbose=False,
-                two_opt_prob=config['two_opt_prob'],
-                time_limit_sec=config['time_limit']
-            )
-            
-            exec_time = time.time() - start_time
-            
-            is_valid, _ = verify_solution(best.routes, instance)
-            
-            if is_valid:
-                costs.append(best.cost)
-                print(f"Coût: {best.cost}, Temps: {exec_time:.1f}s")
-            else:
-                print("INVALIDE!")
-        
-        if costs:
-            avg_cost = sum(costs) / len(costs)
-            min_cost = min(costs)
-            results.append({
-                'name': test_config['name'],
-                'config': test_config,
-                'avg_cost': avg_cost,
-                'min_cost': min_cost,
-                'costs': costs
-            })
-            print(f"  → Coût moyen: {avg_cost:.1f}, Meilleur: {min_cost}")
-        else:
-            print("  → Aucun résultat valide")
-    
-    # Analyse des résultats
-    if results:
-        print(f"\n{'='*60}")
-        print("RÉSULTATS ULTRA-RAPIDES")
-        print(f"{'='*60}")
-        
-        # Tri par coût moyen
-        results.sort(key=lambda x: x['avg_cost'])
-        
-        print("\nCLASSEMENT (par coût moyen):")
-        for i, result in enumerate(results, 1):
-            print(f"{i:2d}. {result['name']:<20} | Coût: {result['avg_cost']:7.1f} | Meilleur: {result['min_cost']}")
-        
-        # Analyse par type de paramètre
-        parameter_analysis = {}
-        
-        for result in results:
-            for param, value in result['config'].items():
-                if param != 'name':
-                    if param not in parameter_analysis:
-                        parameter_analysis[param] = []
-                    parameter_analysis[param].append((value, result['avg_cost']))
-        
-        print(f"\nANALYSE PAR PARAMÈTRE:")
-        for param, values in parameter_analysis.items():
-            if len(values) > 1:
-                sorted_values = sorted(values, key=lambda x: x[1])
-                best_val, best_cost = sorted_values[0]
-                worst_val, worst_cost = sorted_values[-1]
-                improvement = (worst_cost - best_cost) / worst_cost * 100
-                
-                print(f"\n{param}:")
-                print(f"  Meilleure valeur: {best_val} (coût: {best_cost:.1f})")
-                print(f"  Pire valeur: {worst_val} (coût: {worst_cost:.1f})")
-                print(f"  Amélioration: {improvement:.1f}%")
-        
-        # Recommandations rapides
-        best_result = results[0]
-        print(f"\nRECOMMENDATION RAPIDE:")
-        print(f"Configuration: {best_result['name']}")
-        print(f"Coût obtenu: {best_result['avg_cost']:.1f}")
-        print("Paramètres modifiés:")
-        for param, value in best_result['config'].items():
-            if param != 'name':
-                print(f"  {param}: {value}")
-        
-        # Sauvegarde des résultats
-        data_file = save_ultra_quick_results(results)
-        summary_file = save_ultra_quick_summary(results)
-        
-        print(f"\nFichiers générés:")
-        print(f"- Données: {data_file}")
-        print(f"- Résumé: {summary_file}")
-        
-        print(f"\nNote: Ces résultats sont basés sur des tests de 15s seulement.")
-        print("Pour une analyse complète, utilisez 'quick_parameter_test.py'.")
-    
-    else:
-        print("Aucun résultat valide obtenu.")
 
 
 def main():
