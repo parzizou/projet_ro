@@ -9,6 +9,33 @@ Points importants:
 - Fenêtres de temps (ex: livrer entre 8h et 18h): non gérées explicitement dans cette version.
   - On suppose que minimiser la distance revient à minimiser le temps de tournée.
 
+## Modélisation Exacte (PuLP) - Analyse Théorique
+En complément de l'algorithme génétique (méthode heuristique), cette section fournit une Modélisation Exacte (MIP) utilisant PuLP.
+
+L'objectif de cette partie n'est pas de remplacer le solveur GA, mais de prouver théoriquement et pratiquement pourquoi une approche heuristique est nécessaire pour ce problème complexe (MD-VRPSC).
+
+Le script run_pulp_demo.py modélise le problème complet avec les 3 contraintes (Capacité, Multi-Dépôts, Compatibilité/Split) en utilisant l'astuce de pré-traitement (décomposition des commandes) pour rester dans un modèle polynomial O(n^2v) et éviter l'explosion exponentielle (2^n) des contraintes DFJ.
+
+Ce que contient cette partierun_pulp_demo.py 
+
+- Le script de modélisation exacte (MIP) et de démonstration.p03_test.vrp — Instance (N=10, 3 dépôts) pour le Test de Succès (validation du modèle).p01.vrp — Instance (N=50, 4 dépôts) pour le Test d'Échec (validation de la complexité NP-hard).Rapport_Modelisation.html — (Ce document) L'analyse théorique complète (Modélisation, Complexité NP-Complet, Analyse O(2^n) vs O(n^2v)).
+
+Lancer la Démonstration PuLP
+
+Ce script démontre la faisabilité (sur petit N) et l'infaisabilité (sur grand N) de la méthode exacte.
+
+Prérequis Python 3.10 ou plus PuLP (solveur MIP) : pip install pulp
+
+Exécution de la Démonstration
+
+Le script est conçu pour exécuter deux tests :
+
+- Test de Succès (Validation du Modèle) Objectif : Prouver que notre modèle mathématique (Étape B) est logiquement correct. Action : Dans run_pulp_demo.py, régler FILE_TO_SOLVE = "p03_test.vrp". Lancer : python run_pulp_demo.py Résultat Attendu : Solver Status: Optimal. Le script trouve la solution optimale en quelques secondes.
+
+- Test d'Échec (Validation de la Complexité) Objectif : Prouver en pratique que la méthode exacte est impossible pour des instances de taille réelle dans le temps imparti. Action : Dans run_pulp_demo.py, régler FILE_TO_SOLVE = "p01.vrp". Lancer : python run_pulp_demo.py Résultat Attendu : Solver Status: Not Solved. Le solveur s'arrêtera après la limite de temps (ex: 170s) sans avoir trouvé de solution.
+
+L'échec du Test 2 justifie la stratégie principale de ce projet, qui est l'utilisation d'un algorithme heuristique (GA) pour obtenir des solutions de haute qualité en un temps raisonnable.
+
 ## Ce que contient le dépôt
 
 - `cvrp_data.py` — Lecture des fichiers CVRPLIB `.vrp`, construction de l’instance:
