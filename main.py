@@ -17,11 +17,10 @@ from ga import genetic_algorithm
 from solution import verify_solution, solution_total_cost, write_solution_text
 
 # Chemin par défaut du fichier .vrp
-pathfile = "data4.vrp"
+pathfile = "data6.vrp"
 
-# NOUVELLES OPTIONS (sans argparse): à éditer soit ici, soit via les paramètres de main()
-# - valeur optimale cible pour afficher le gap (%) dans les logs et le résumé
-TARGET_OPTIMUM: int | None = None
+
+TARGET_OPTIMUM: int | None = 58578
 # - fichier sentinelle: s'il existe pendant l'exécution, l'algo s'arrête proprement
 STOP_SENTINEL_FILE: str | None = None  # ex: "stop.flag"
 
@@ -267,11 +266,5 @@ if __name__ == "__main__":
     # Modifie ces paramètres pour tester rapidement sans passer par la ligne de commande.
     # Laisse à None pour garder les valeurs par défaut/CLI.
     main(
-        pop_size=50,              # ex: 100
-        mutation_rate=0.30,       # ex: 0.25
-        crossover_rate=0.50,      # ex: 0.8
-        two_opt_chance=0.35,      # ex: 0.5 ; mets 0.0 pour désactiver 2-opt
-        instance_vrplib=None,     # ex: "A-n32-k5"
-        init_mode="nn_plus_random",  # ou "all_random" ou "nn_plus_random"
-        instance="data3.vrp",  # si tu veux forcer un fichier local
+        instance=pathfile,  # si tu veux forcer un fichier local
     )

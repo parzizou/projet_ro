@@ -23,7 +23,7 @@ Diversification (nouveau):
 
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import List, Tuple, Set
+from typing import List, Tuple, Set, Dict
 import random
 import time
 import os
@@ -246,17 +246,17 @@ def _stats(pop: List[Individual]) -> Tuple[int, float]:
 
 def genetic_algorithm(
     inst: CVRPInstance,
-    pop_size: int = 50,
+    pop_size: int = 40,
     generations: int = 100000,
-    tournament_k: int = 3,           # -1 par défaut (moins de pression de sélection)
+    tournament_k: int = 5,           # -1 par défaut (moins de pression de sélection)
     elitism: int = 3,                # un peu plus bas pour garder de la place à la diversité
     pc: float = 0.50,                # crossover probability
-    pm: float = 0.30,                # mutation probability de base
+    pm: float = 0.10,                # mutation probability de base
     seed: int | None = 1,
     use_2opt: bool = True,
     verbose: bool = True,
     log_interval: int = 10,
-    two_opt_prob: float = 0.35,
+    two_opt_prob: float = 0.6,
     time_limit_sec: float = 20000.0,  # limite de temps en secondes (0 = pas de limite)
     target_optimum: int | None = None,  # valeur optimale connue (pour gap%)
     stop_on_file: str | None = None,    # chemin d'un fichier sentinelle pour arrêt propre
@@ -268,20 +268,23 @@ def genetic_algorithm(
     stagnation_shake_gens: int = 60,    # après X générations sans amélioration -> shake
     stagnation_restart_gens: int = 180, # après Y générations sans amélioration -> restart partiel
     adaptive_mutation: bool = True,     # pm augmente avec la stagnation
-) -> Individual:
+
+    # Intégration tests: si True, renvoie (best, metrics) au lieu de seulement best
+    return_metrics: bool = False,
+):
     """
     Boucle principale du GA. Retourne le meilleur individu trouvé.
-
-    Diversification:
-      - Random immigrants: remplace une fraction des pires individus à chaque génération.
-      - Duplicate avoidance: évite d'empiler des solutions identiques (par routes).
-      - Shake: si stagnation, heavy mutate une partie de la pop (hors élites).
-      - Restart partiel: si longue stagnation, on garde le meilleur et on réensemence le reste.
-      - Mutation adaptative: pm légèrement augmenté avec la stagnation; 2-opt un peu réduit pour laisser explorer.
-
-    init_mode:
-      - "nn_plus_random": 1 individu nearest-neighbor puis le reste aléatoire
-      - "all_random": population entièrement aléatoire
+    Si return_metrics=True, retourne (best, metrics) avec:
+      metrics = {
+        'elapsed_sec': float,
+        'generations_done': int,
+        'stopped_by': str|None,
+        'best_cost': int,
+        'avg_cost_last': float,
+        'routes_best': int,
+        'pm_eff_last': float,
+        'two_opt_prob_eff_last': float
+      }
     """
     rng = random.Random(seed)
 
@@ -311,9 +314,13 @@ def genetic_algorithm(
         print(f"[GA] Départ: best={bcost:.0f} | avg={avg:.0f} | #routes_best={len(best.routes)} | init_mode={init_mode}{fmt_gap(bcost)}", flush=True)
 
     stopped_by = None  # "time", "file", "keyboard", or None
+    gen = 0            # compteur pour métriques de fin
 
     # Aides: pour éviter les doublons de routes
     route_signatures: Set[Tuple[Tuple[int, ...], ...]] = set(_route_signature(ind.routes) for ind in pop)
+
+    pm_eff_last = None
+    two_opt_prob_eff_last = None
 
     try:
         for gen in range(1, generations + 1):
@@ -338,6 +345,8 @@ def genetic_algorithm(
             pm_eff = max(0.01, min(0.95, pm_eff))
             two_opt_prob_eff = two_opt_prob * (1.0 - 0.30 * stale_ratio) if adaptive_mutation else two_opt_prob
             two_opt_prob_eff = max(0.0, min(1.0, two_opt_prob_eff))
+            pm_eff_last = pm_eff
+            two_opt_prob_eff_last = two_opt_prob_eff
 
             new_pop: List[Individual] = []
 
@@ -493,4 +502,21 @@ def genetic_algorithm(
         total_elapsed = time.time() - start_time
         print(f"[GA] Terminé après {total_elapsed:.1f}s. Meilleur coût trouvé: {best.cost} | #routes={len(best.routes)}", flush=True)
 
-    return best
+    # Retour standard
+    if not return_metrics:
+        return best
+
+    # Retour avec métriques pour les tests
+    total_elapsed = time.time() - start_time
+    bcost, avg_last = _stats(pop)
+    metrics: Dict[str, object] = {
+        "elapsed_sec": total_elapsed,
+        "generations_done": gen,
+        "stopped_by": stopped_by,
+        "best_cost": best.cost,
+        "avg_cost_last": float(avg_last),
+        "routes_best": len(best.routes),
+        "pm_eff_last": float(pm_eff_last) if pm_eff_last is not None else None,
+        "two_opt_prob_eff_last": float(two_opt_prob_eff_last) if two_opt_prob_eff_last is not None else None,
+    }
+    return best, metrics
