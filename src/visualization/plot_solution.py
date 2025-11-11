@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-plot.py
+plot_solution.py
 Affichage graphique d'une solution CVRP:
 - Les clients sont des points.
 - Le dépôt est une étoile.
@@ -12,9 +12,14 @@ Dépendance: matplotlib
 """
 
 from __future__ import annotations
+import os
+import sys
 from typing import List, Optional
 
-from cvrp_data import CVRPInstance
+# Gestion des imports
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
+
+from src.core.cvrp_data import CVRPInstance
 
 
 def plot_solution(
