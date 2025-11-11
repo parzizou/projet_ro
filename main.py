@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-main.py (version simplifiée)
-- Charge un fichier .vrp OU une instance par nom CVRPLIB (via 'vrplib' si installé)
-- Exécute l'algo génétique avec ses paramètres par défaut (ou ceux passés à main)
-- Affiche et sauvegarde la solution (.sol) avec les IDs originaux
-- Affiche aussi le graphe de la solution (plot.py) et sauvegarde un .png
+main.py (avec:
+ - time_limit_sec param pour mono et multi
+ - mode multi-dépôts optionnel piloté par les paramètres de main())
 """
 
 from __future__ import annotations
@@ -16,9 +14,17 @@ from cvrp_data import load_cvrp_instance, CVRPInstance, load_cvrp_from_vrplib
 from ga import genetic_algorithm
 from solution import verify_solution, solution_total_cost, write_solution_text
 
-# Chemin par défaut du fichier .vrp
-pathfile = "data6.vrp"
+# Multi-dépôts
+try:
+    from multi_depot import (
+        MultiDepotConfig,
+        run_multi_depot_pipeline,
+    )
+    _MD_AVAILABLE = True
+except Exception:
+    _MD_AVAILABLE = False
 
+pathfile = "data3.vrp"  # fichier par défaut s'il n'y en a pas d'autre
 
 TARGET_OPTIMUM: int | None = 58578
 # - fichier sentinelle: s'il existe pendant l'exécution, l'algo s'arrête proprement
@@ -106,36 +112,26 @@ def main(
     instance_vrplib: str | None = None,
     init_mode: str = "nn_plus_random",   # "nn_plus_random" (défaut) ou "all_random"
     instance: str | None = None,         # chemin .vrp alternatif si pas d'instance_vrplib
+
+    # NOUVEAU: time limit commun mono/multi
+    time_limit_sec: float | None = 170.0,
+
+    # NOUVEAU: paramètres pour le mode multi-dépôts (pilotés par la fonction)
+    multi: bool = False,
+    md_n: int = 4,
+    md_types: str = "ABCD",
+    md_seed: int = 123,
+    md_capacity: int | None = None,
+    md_plot_connect_depot: bool = False,
 ):
     """
     Lance l'algo avec des paramètres passés directement à main pour faciliter les tests rapides.
-
-    Paramètres:
-      - pop_size: taille de la population (défaut 50)
-      - mutation_rate: taux de mutation [0..1] (défaut 0.30)
-      - crossover_rate: taux de croisement [0..1] (défaut 0.50)
-      - two_opt_chance: proba d'appliquer 2-opt [0..1] (défaut 0.35). 0.0 => 2-opt désactivé.
-      - instance_vrplib: nom d'instance CVRPLIB (ex: "A-n32-k5"). Si fourni, ignore --instance.
-      - init_mode: "nn_plus_random" ou "all_random"
-      - instance: chemin d'un fichier .vrp (si pas d'instance_vrplib)
-
-    Astuce:
-      - Si tu veux garder le comportement CLI, laisse ces paramètres à None et utilise --instance/--name.
+    - time_limit_sec s'applique au mono et au multi (passé au GA).
+    - Pour activer le multi-dépôts: passe multi=True et les md_* voulus.
     """
     parser = argparse.ArgumentParser(description="CVRP - Exécution simple de l'algorithme génétique + plot")
-    parser.add_argument(
-        "--instance",
-        type=str,
-        default=None,
-        help="Chemin vers le fichier .vrp local. Si absent, essaie 'data.vrp' à côté de ce script puis dans le CWD.",
-    )
-    parser.add_argument(
-        "--name",
-        type=str,
-        default=None,
-        help="Nom d'une instance CVRPLIB (ex: A-n32-k5). Requiert 'pip install vrplib'.",
-    )
-    # On parse pour compat CLI, mais on va surcharger avec les params de main() si fournis.
+    parser.add_argument("--instance", type=str, default=None)
+    parser.add_argument("--name", type=str, default=None)
     args = parser.parse_args()
 
     # Surcharges via paramètres de main()
@@ -163,7 +159,6 @@ def main(
         instance_label = args.name
         print(f"[Run] Chargée depuis CVRPLIB (vrplib): {args.name}")
         if best_known is not None and best_known > 0:
-            # On écrase la cible si connue pour afficher le gap
             global TARGET_OPTIMUM
             TARGET_OPTIMUM = best_known
             print(f"[Run] Best-known cost détecté: {best_known} (TARGET_OPTIMUM mis à jour)")
@@ -196,10 +191,52 @@ def main(
     pc = _clamp01(crossover_rate, 0.50)
     two_opt_prob = _clamp01(two_opt_chance, 0.35)
     use_2opt = two_opt_prob > 0.0
+    tl = float(time_limit_sec) if time_limit_sec is not None else 0.0
 
-    print(f"[Run] Paramètres GA: pop_size={ps} | pm={pm:.2f} | pc={pc:.2f} | two_opt_prob={two_opt_prob:.2f} | init_mode={init_mode}")
+    print(f"[Run] Paramètres GA: pop_size={ps} | pm={pm:.2f} | pc={pc:.2f} | two_opt_prob={two_opt_prob:.2f} | init_mode={init_mode} | time_limit_sec={tl:.1f}")
 
-    # Exécute le GA (arrêt possible par Ctrl+C ou fichier sentinelle)
+    # =========================
+    # MODE MULTI-DÉPÔTS (optionnel)
+    # =========================
+    if multi:
+        if not _MD_AVAILABLE:
+            print("[Err] Module multi_depot introuvable. Ajoute multi_depot.py à la racine du projet.")
+            sys.exit(1)
+
+        cfg = MultiDepotConfig(
+            k_depots=max(1, int(md_n)),
+            types_alphabet=md_types if md_types else "ABCD",
+            seed=int(md_seed),
+            capacity_override=int(md_capacity) if md_capacity else None,
+            connect_depot_on_plot=bool(md_plot_connect_depot),
+        )
+        print(f"[MD] Mode multi-dépôts activé: K={cfg.k_depots}, types='{cfg.types_alphabet}', seed={cfg.seed}, cap={cfg.capacity_override or inst.capacity}")
+
+        summary = run_multi_depot_pipeline(
+            inst_base=inst,
+            original_id_from_baseindex=original_ids_list,
+            base_label=instance_label or "instance",
+            cfg=cfg,
+            ga_pop_size=ps,
+            ga_pm=pm,
+            ga_pc=pc,
+            ga_two_opt_prob=two_opt_prob,
+            init_mode=init_mode,
+            verbose_ga=True,
+            do_plot=True,
+            ga_time_limit_sec=tl,
+        )
+
+        print("\n=== Résultat multi-dépôts ===")
+        print(f"Coût total agrégé: {summary['total_cost']}")
+        for d in summary["per_depot"]:
+            print(f" - Dépôt d{d['depot_idx']} ({d['type']}): coût={d['cost']} | #routes={d['routes_count']}")
+        print(f"Solution agrégée: {summary['solution_aggregate_path']}")
+        return
+
+    # =========================
+    # MODE MONO-DÉPÔT — inchangé (avec time_limit_sec)
+    # =========================
     best = genetic_algorithm(
         inst,
         pop_size=ps,
@@ -210,6 +247,7 @@ def main(
         target_optimum=TARGET_OPTIMUM,
         stop_on_file=STOP_SENTINEL_FILE,
         init_mode=init_mode,
+        time_limit_sec=tl,
     )
 
     # Vérification + affichage
@@ -263,8 +301,14 @@ def main(
 
 
 if __name__ == "__main__":
-    # Modifie ces paramètres pour tester rapidement sans passer par la ligne de commande.
-    # Laisse à None pour garder les valeurs par défaut/CLI.
+    # Exemples:
+
     main(
-        instance=pathfile,  # si tu veux forcer un fichier local
+        instance=pathfile,
+        time_limit_sec=30.0,
+        multi=True,
+        md_n=4,
+        md_types="ABAB",
+        md_seed=42,
+        md_plot_connect_depot=False,
     )
