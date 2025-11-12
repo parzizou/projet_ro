@@ -58,18 +58,61 @@ python scripts\multi_depot.py
 ---
 
 ### 3. `test.py`
-**Description** : Script de test général pour validation rapide.
+**Description** : Script de test général pour validation rapide et optimisation de paramètres.
 
 **Fonctionnalités** :
 - Tests unitaires des modules principaux
 - Validation du chargement des données
 - Vérification de l'algorithme génétique
+- **Optimisation de paramètres GA** (single-depot)
 - Tests de performance
 
 **Utilisation** :
 ```powershell
+# Test basique
 python scripts\test.py
+
+# Optimisation d'un paramètre
+python scripts\test.py --instance data/instances/data.vrp --target 22901 --param pm --values 0.02,0.04,0.06,0.08 --time-sec 45 --repeats 3
+
+# Avec paramètres fixes
+python scripts\test.py --instance data/instances/data.vrp --param pop_size --values 30:100:10 --fixed "pc=0.85,pm=0.06" --repeats 5
 ```
+
+---
+
+### 4. `test_multi_depot.py` 🆕
+**Description** : Test et optimisation de paramètres pour le mode **multi-dépôts**.
+
+**Fonctionnalités** :
+- Optimisation des paramètres multi-dépôts :
+  - `k_depots` : Nombre de dépôts (2-10)
+  - `types_alphabet` : Types de dépôts ("AB", "ABC", "ABCD", etc.)
+  - `capacity_override` : Surcharge de capacité
+- Optimisation des paramètres GA préfixés `ga_` :
+  - `ga_pop_size`, `ga_pm`, `ga_pc`, `ga_two_opt_prob`, `ga_time_limit_sec`
+- Tests statistiques avec répétitions
+- Export CSV des résultats
+- Calcul de gap si optimal fourni
+
+**Utilisation** :
+```powershell
+# Test du nombre de dépôts
+python scripts\test_multi_depot.py --instance data/instances/data.vrp --param k_depots --values 2,3,4,5,6 --repeats 3
+
+# Test des types de dépôts
+python scripts\test_multi_depot.py --instance data/instances/data.vrp --param types_alphabet --values AB,ABC,ABCD,ABCDE --repeats 2
+
+# Test des paramètres GA en mode multi-dépôt
+python scripts\test_multi_depot.py --instance data/instances/data.vrp --param ga_pop_size --values 20,40,60,80 --repeats 3 --fixed "k_depots=3,types_alphabet=ABC"
+
+# Test avec gap et export CSV
+python scripts\test_multi_depot.py --instance data/instances/data.vrp --param ga_pm --values 0.02:0.10:0.02 --target 22901 --repeats 5 --save-csv results/md_pm_test.csv
+```
+
+**Paramètres testables** :
+- **Multi-dépôt** : `k_depots`, `types_alphabet`, `capacity_override`, `seed`
+- **GA** : `ga_pop_size`, `ga_pm`, `ga_pc`, `ga_two_opt_prob`, `ga_time_limit_sec`, `init_mode`
 
 ---
 
@@ -151,19 +194,37 @@ python scripts\test.py
 python scripts\run_pulp_demo.py  # Test p03_test.vrp
 ```
 
-### 2. Résolution Pratique
+### 2. Résolution Pratique (Single-Depot)
 ```powershell
 # Utiliser l'AG pour instances réelles
 python main.py
 ```
 
-### 3. Optimisation des Paramètres
+### 3. Optimisation des Paramètres (Single-Depot)
 ```powershell
 # Analyser et optimiser
 python run_parameter_analysis.py
+
+# Ou test ciblé d'un paramètre
+python scripts\test.py --instance data/instances/data.vrp --param pm --values 0.02,0.04,0.06,0.08 --repeats 5
 ```
 
-### 4. Tests & Validation
+### 4. Résolution Multi-Dépôts 🆕
+```powershell
+# Résoudre avec multi-dépôts
+python scripts\multi_depot.py
+```
+
+### 5. Optimisation Multi-Dépôts 🆕
+```powershell
+# Optimiser les paramètres multi-dépôts
+python scripts\test_multi_depot.py --instance data/instances/data.vrp --param k_depots --values 2,3,4,5 --repeats 3
+
+# Optimiser les paramètres GA en mode multi-dépôt
+python scripts\test_multi_depot.py --instance data/instances/data.vrp --param ga_pm --values 0.02:0.10:0.02 --repeats 5 --fixed "k_depots=4"
+```
+
+### 6. Tests & Validation
 ```powershell
 # Vérifier tout fonctionne
 python scripts\test.py

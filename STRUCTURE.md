@@ -1,6 +1,18 @@
 # Structure du Projet CVRP
-
-## 📁 Architecture Complète (Mise à jour : 12 nov 2025)
+├── 🧪 demos/                            # 🆕 Scripts de démonstration
+│   ├── demo_gap_calculation.py          # Démo calcul de gap
+│   ├── demo_gap_vs_improvement.py       # Démo comparaison gap vs amélioration
+│   ├── demo_multithreading.py           # Démo multi-threading
+│   ├── demo_test_multi_depot.py         # ✨ Démo interactive tests multi-dépôts
+│   ├── test_visualizations_with_gap.py  # Test visualisations avec gap
+│   └── README.md                        # Documentation complète des démos
+│
+├── � scripts/                          # 🆕 Scripts d'exécution alternatifs
+│   ├── run_pulp_demo.py                # Modélisation exacte avec PuLP (MIP)
+│   ├── multi_depot.py                  # Support multi-dépôts
+│   ├── test.py                         # Script de test single-depot
+│   ├── test_multi_depot.py             # ✨ Optimisation paramètres multi-dépôts
+│   └── README.md                       # Guide d'utilisation des scriptschitecture Complète (Mise à jour : 12 nov 2025)
 
 ```
 projet_ro/
@@ -117,13 +129,17 @@ projet_ro/
 ### Modélisation Exacte (scripts/)
 - **run_pulp_demo.py** 🆕 : Résolution exacte avec PuLP/MIP
 - **multi_depot.py** 🆕 : Support pour problèmes multi-dépôts
-- **test.py** 🆕 : Script de test général
+- **test.py** 🆕 : Script de test et optimisation (single-depot)
+- **test_multi_depot.py** ✨ : Optimisation de paramètres multi-dépôts
+- **README.md** : Documentation complète (4 scripts + guide)
 
 ### Scripts de Démonstration (demos/)
 - **demo_gap_calculation.py** : Démonstration calcul de gap
 - **demo_gap_vs_improvement.py** : Comparaison gap vs amélioration
 - **demo_multithreading.py** : Exemple de multi-threading
+- **demo_test_multi_depot.py** ✨ : Démonstration interactive tests multi-dépôts
 - **test_visualizations_with_gap.py** : Test du système de visualisation
+- **README.md** : Documentation complète des démos (5 fichiers)
 
 ### Instances VRP (data/instances/)
 - **data.vrp** : Instance principale X-n153-k22 (optimal: 22901)

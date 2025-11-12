@@ -72,6 +72,42 @@ python demos\test_visualizations_with_gap.py
 
 ---
 
+### 5. `demo_test_multi_depot.py` 🆕
+**Description** : Démonstration interactive de l'optimisation de paramètres multi-dépôts.
+
+**Contenu** :
+- 4 scénarios de test prédéfinis :
+  1. Optimisation du nombre de dépôts (k_depots)
+  2. Optimisation des types de dépôts (types_alphabet)
+  3. Optimisation de la taille de population GA
+  4. Optimisation du taux de mutation avec export CSV
+- Menu interactif pour choisir les tests
+- Explications détaillées de chaque test
+
+**Utilisation** :
+```powershell
+python demos\demo_test_multi_depot.py
+```
+
+**Interface** : Menu interactif avec options :
+- Choix du test spécifique (1-4)
+- Lancer tous les tests ('all')
+- Quitter ('q')
+
+**Exemples de tests** :
+```powershell
+# Optimiser le nombre de dépôts
+python scripts\test_multi_depot.py --instance data/instances/data.vrp --param k_depots --values 2,3,4 --repeats 2
+
+# Optimiser les types de dépôts
+python scripts\test_multi_depot.py --instance data/instances/data.vrp --param types_alphabet --values AB,ABC,ABCD --repeats 2
+
+# Optimiser les paramètres GA
+python scripts\test_multi_depot.py --instance data/instances/data.vrp --param ga_pop_size --values 20,40,60 --repeats 2 --fixed "k_depots=3"
+```
+
+---
+
 ## 🎯 Objectif des Démos
 
 Ces scripts servent à :
