@@ -4,38 +4,38 @@
 
 ```
 projet_ro/
-├── 🔧 Fichiers principaux
+├── 🔧 Fichiers principaux (racine)
 │   ├── main.py                          # Point d'entrée principal (résolution CVRP avec GA)
 │   ├── run_parameter_analysis.py        # Menu interactif pour analyse de paramètres
-│   ├── run_pulp_demo.py                 # 🆕 Modélisation exacte avec PuLP (MIP)
-│   ├── multi_depot.py                   # 🆕 Support multi-dépôts
-│   ├── test.py                          # 🆕 Script de test
 │   ├── readme.md                        # Documentation générale du projet
 │   ├── requirements.txt                 # Dépendances Python
-│   └── STRUCTURE.md                     # Ce fichier (arborescence du projet)
+│   ├── STRUCTURE.md                     # Ce fichier (arborescence du projet)
+│   └── .gitignore                       # Fichiers ignorés par Git
 │
-├── 📊 Instances VRP
-│   ├── data2.vrp                        # 🆕 Instance VRP #2
-│   ├── data3.vrp                        # 🆕 Instance VRP #3
-│   ├── data4.vrp                        # 🆕 Instance VRP #4
-│   ├── data5.vrp                        # 🆕 Instance VRP #5
-│   ├── data6.vrp                        # 🆕 Instance VRP #6
-│   ├── p01.vrp                          # 🆕 Instance test (N=50, 4 dépôts)
-│   ├── p03_test.vrp                     # 🆕 Instance test (N=10, 3 dépôts)
-│   └── debug_model.lp                   # 🆕 Fichier de debug LP (PuLP)
+├── 📊 data/                             # Données du problème CVRP
+│   ├── instances/                       # Instances VRP
+│   │   ├── data.vrp                    # Instance CVRP principale (X-n153-k22)
+│   │   ├── data2.vrp                   # 🆕 Instance VRP #2
+│   │   ├── data3.vrp                   # 🆕 Instance VRP #3
+│   │   ├── data4.vrp                   # 🆕 Instance VRP #4
+│   │   ├── data5.vrp                   # 🆕 Instance VRP #5
+│   │   ├── data6.vrp                   # 🆕 Instance VRP #6
+│   │   ├── p01.vrp                     # 🆕 Instance test (N=50, 4 dépôts)
+│   │   └── p03_test.vrp                # 🆕 Instance test (N=10, 3 dépôts)
+│   └── solutions/
+│       ├── solution_data.png           # Visualisation de la solution
+│       └── solution_data.sol           # Solution optimale (coût: 22901)
 │
-├── 🧪 Scripts de démonstration
+├── 🧪 demos/                            # 🆕 Scripts de démonstration
 │   ├── demo_gap_calculation.py          # Démo calcul de gap
 │   ├── demo_gap_vs_improvement.py       # Démo comparaison gap vs amélioration
 │   ├── demo_multithreading.py           # Démo multi-threading
 │   └── test_visualizations_with_gap.py  # Test visualisations avec gap
 │
-├── 📊 data/                             # Données du problème CVRP
-│   ├── instances/
-│   │   └── data.vrp                    # Instance CVRP principale (X-n153-k22)
-│   └── solutions/
-│       ├── solution_data.png           # Visualisation de la solution
-│       └── solution_data.sol           # Solution optimale (coût: 22901)
+├── � scripts/                          # 🆕 Scripts d'exécution alternatifs
+│   ├── run_pulp_demo.py                # Modélisation exacte avec PuLP (MIP)
+│   ├── multi_depot.py                  # Support multi-dépôts
+│   └── test.py                         # Script de test
 │
 ├── 📖 docs/                             # Documentation complète
 │   ├── README.md                       # README documentation
@@ -48,6 +48,7 @@ projet_ro/
 │   └── exemple_multithreading.py      # Exemple de code multi-threading
 │
 ├── 📈 results/                          # Résultats des expériences
+│   ├── debug_model.lp                  # 🆕 Fichier de debug LP (PuLP)
 │   ├── parameter_analysis/             # Analyses complètes de paramètres
 │   │   └── (fichiers JSON et visualisations PNG générés)
 │   └── parameter_tests/                # Tests de paramètres archivés
@@ -113,9 +114,20 @@ projet_ro/
   - Utilise matplotlib pour visualiser les solutions
   - Montre le dépôt et les tournées en couleurs différentes
 
-### Modélisation Exacte (nouveaux fichiers)
+### Modélisation Exacte (scripts/)
 - **run_pulp_demo.py** 🆕 : Résolution exacte avec PuLP/MIP
 - **multi_depot.py** 🆕 : Support pour problèmes multi-dépôts
+- **test.py** 🆕 : Script de test général
+
+### Scripts de Démonstration (demos/)
+- **demo_gap_calculation.py** : Démonstration calcul de gap
+- **demo_gap_vs_improvement.py** : Comparaison gap vs amélioration
+- **demo_multithreading.py** : Exemple de multi-threading
+- **test_visualizations_with_gap.py** : Test du système de visualisation
+
+### Instances VRP (data/instances/)
+- **data.vrp** : Instance principale X-n153-k22 (optimal: 22901)
+- **data2-6.vrp** 🆕 : Instances VRP additionnelles
 - **p01.vrp, p03_test.vrp** 🆕 : Instances de test pour validation
 
 ### Scripts d'Interface
@@ -151,7 +163,19 @@ python main.py
 
 ### Modélisation Exacte (PuLP)
 ```powershell
-python run_pulp_demo.py
+python scripts\run_pulp_demo.py
+```
+
+### Scripts de Démonstration
+```powershell
+# Démo du calcul de gap
+python demos\demo_gap_calculation.py
+
+# Démo multi-threading
+python demos\demo_multithreading.py
+
+# Test des visualisations
+python demos\test_visualizations_with_gap.py
 ```
 
 ## 📊 Fonctionnalités du Système Actuel
@@ -184,10 +208,18 @@ python run_pulp_demo.py
 ## 🆕 Nouveautés du Merge avec Main
 
 ### Fichiers ajoutés
-- ✅ 5 nouvelles instances VRP (data2-6.vrp)
-- ✅ Instances de test multi-dépôts (p01, p03_test)
-- ✅ Modélisation exacte PuLP (run_pulp_demo.py)
-- ✅ Support multi-dépôts (multi_depot.py)
+- ✅ 5 nouvelles instances VRP (data2-6.vrp) → `data/instances/`
+- ✅ Instances de test multi-dépôts (p01, p03_test) → `data/instances/`
+- ✅ Modélisation exacte PuLP (run_pulp_demo.py) → `scripts/`
+- ✅ Support multi-dépôts (multi_depot.py) → `scripts/`
+- ✅ Script de test (test.py) → `scripts/`
+
+### Organisation améliorée
+- ✅ Création du dossier `demos/` pour les scripts de démonstration
+- ✅ Création du dossier `scripts/` pour les scripts d'exécution alternatifs
+- ✅ Toutes les instances VRP regroupées dans `data/instances/`
+- ✅ Fichiers de debug déplacés dans `results/`
+- ✅ Racine du projet nettoyée (seulement fichiers essentiels)
 
 ### Améliorations conservées de feature-tests-parameters
 - ✅ Système d'analyse avancé avec gap vs optimal

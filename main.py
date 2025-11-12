@@ -16,7 +16,7 @@ from src.core.solution import verify_solution, solution_total_cost, write_soluti
 
 # Multi-dépôts
 try:
-    from multi_depot import (
+    from scripts.multi_depot import (
         MultiDepotConfig,
         run_multi_depot_pipeline,
     )
