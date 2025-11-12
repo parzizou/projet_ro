@@ -2,7 +2,9 @@
 """
 main.py (avec:
  - time_limit_sec param pour mono et multi
- - mode multi-dépôts optionnel piloté par les paramètres de main())
+ - mode multi-dépôts optionnel piloté par les paramètres de main()
+ - contraintes de temps pour les tournées
+)
 """
 
 from __future__ import annotations
@@ -27,8 +29,7 @@ except Exception:
 pathfile = "data3.vrp"  # fichier par défaut s'il n'y en a pas d'autre
 
 TARGET_OPTIMUM: int | None = 58578
-# - fichier sentinelle: s'il existe pendant l'exécution, l'algo s'arrête proprement
-STOP_SENTINEL_FILE: str | None = None  # ex: "stop.flag"
+STOP_SENTINEL_FILE: str | None = None
 
 
 def resolve_instance_path(cli_value: str | None) -> str | None:
@@ -110,43 +111,46 @@ def main(
     crossover_rate: float | None = None,
     two_opt_chance: float | None = None,
     instance_vrplib: str | None = None,
-    init_mode: str = "nn_plus_random",   # "nn_plus_random" (défaut) ou "all_random"
-    instance: str | None = None,         # chemin .vrp alternatif si pas d'instance_vrplib
-
-    # NOUVEAU: time limit commun mono/multi
+    init_mode: str = "nn_plus_random",
+    instance: str | None = None,
     time_limit_sec: float | None = 170.0,
-
-    # NOUVEAU: paramètres pour le mode multi-dépôts (pilotés par la fonction)
+    
+    # Paramètres multi-dépôts
     multi: bool = False,
     md_n: int = 4,
     md_types: str = "ABCD",
     md_seed: int = 123,
     md_capacity: int | None = None,
     md_plot_connect_depot: bool = False,
+    
+    # NOUVEAUX paramètres pour contraintes de temps des tournées
+    route_time_limit_hours: float | None = None,
+    avg_speed: float = 50.0,
+    unload_time_minutes: float = 5.0,
 ):
     """
     Lance l'algo avec des paramètres passés directement à main pour faciliter les tests rapides.
-    - time_limit_sec s'applique au mono et au multi (passé au GA).
-    - Pour activer le multi-dépôts: passe multi=True et les md_* voulus.
+    
+    Nouveaux paramètres:
+    - route_time_limit_hours: durée maximale d'une tournée en heures (None = pas de limite)
+    - avg_speed: vitesse moyenne des véhicules en unités de distance par heure
+    - unload_time_minutes: temps de déchargement par client en minutes
     """
     parser = argparse.ArgumentParser(description="CVRP - Exécution simple de l'algorithme génétique + plot")
     parser.add_argument("--instance", type=str, default=None)
     parser.add_argument("--name", type=str, default=None)
     args = parser.parse_args()
 
-    # Surcharges via paramètres de main()
     if instance_vrplib is not None:
         args.name = instance_vrplib
     if instance is not None:
         args.instance = instance
 
-    # Variables résultantes
     inst: CVRPInstance
     original_ids_list: list[int]
     instance_label = None
 
     if args.name:
-        # Chargement direct depuis CVRPLIB via 'vrplib'
         try:
             inst, original_ids_list, best_known = load_cvrp_from_vrplib(args.name)
         except ImportError as e:
@@ -163,7 +167,6 @@ def main(
             TARGET_OPTIMUM = best_known
             print(f"[Run] Best-known cost détecté: {best_known} (TARGET_OPTIMUM mis à jour)")
     else:
-        # Fichier local
         instance_path = resolve_instance_path(args.instance)
         if instance_path is None:
             print("Aucun fichier .vrp trouvé.")
@@ -173,31 +176,40 @@ def main(
 
         print(f"[Run] Chargement: {instance_path}")
         inst = load_cvrp_instance(instance_path)
-        # Mapping IDs originaux pour écriture sol
         original_id_from_index, _ = build_original_id_mapping(inst, instance_path)
         original_ids_list = [original_id_from_index[i] for i in range(inst.dimension)]
         instance_label = os.path.splitext(os.path.basename(instance_path))[0]
 
     print(f"[Run] Instance: {inst.name} | N={inst.dimension} | Capacité={inst.capacity}")
+    
+    # Affichage des contraintes de temps
+    if route_time_limit_hours is not None and route_time_limit_hours > 0:
+        print(f"[Run] Contraintes de temps activées:")
+        print(f"  - Limite par tournée: {route_time_limit_hours:.1f} heures")
+        print(f"  - Vitesse moyenne: {avg_speed:.1f} unités/heure")
+        print(f"  - Temps de déchargement: {unload_time_minutes:.1f} minutes/client")
+    
     if TARGET_OPTIMUM is not None and TARGET_OPTIMUM <= 0:
         print("[Warn] TARGET_OPTIMUM doit être > 0 pour un calcul de gap utile.", flush=True)
     if STOP_SENTINEL_FILE:
         print(f"[Run] Arrêt possible par fichier sentinelle: crée '{STOP_SENTINEL_FILE}' pour stopper proprement.", flush=True)
     print("[Run] Astuce: Ctrl+C pour arrêter proprement et garder le meilleur courant.", flush=True)
 
-    # Préparation des paramètres GA (avec valeurs par défaut si None)
     ps = pop_size if pop_size is not None else 50
     pm = _clamp01(mutation_rate, 0.30)
     pc = _clamp01(crossover_rate, 0.50)
     two_opt_prob = _clamp01(two_opt_chance, 0.35)
     use_2opt = two_opt_prob > 0.0
     tl = float(time_limit_sec) if time_limit_sec is not None else 0.0
+    
+    # Paramètres de temps pour les tournées
+    rtl = float(route_time_limit_hours) if route_time_limit_hours is not None else 0.0
+    speed = float(avg_speed) if avg_speed > 0 else 1.0
+    unload = float(unload_time_minutes)
 
     print(f"[Run] Paramètres GA: pop_size={ps} | pm={pm:.2f} | pc={pc:.2f} | two_opt_prob={two_opt_prob:.2f} | init_mode={init_mode} | time_limit_sec={tl:.1f}")
 
-    # =========================
-    # MODE MULTI-DÉPÔTS (optionnel)
-    # =========================
+    # MODE MULTI-DÉPÔTS
     if multi:
         if not _MD_AVAILABLE:
             print("[Err] Module multi_depot introuvable. Ajoute multi_depot.py à la racine du projet.")
@@ -225,6 +237,9 @@ def main(
             verbose_ga=True,
             do_plot=True,
             ga_time_limit_sec=tl,
+            time_limit_hours=rtl,
+            avg_speed_units_per_hour=speed,
+            unload_time_minutes=unload,
         )
 
         print("\n=== Résultat multi-dépôts ===")
@@ -234,9 +249,7 @@ def main(
         print(f"Solution agrégée: {summary['solution_aggregate_path']}")
         return
 
-    # =========================
-    # MODE MONO-DÉPÔT — inchangé (avec time_limit_sec)
-    # =========================
+    # MODE MONO-DÉPÔT avec contraintes de temps
     best = genetic_algorithm(
         inst,
         pop_size=ps,
@@ -248,6 +261,9 @@ def main(
         stop_on_file=STOP_SENTINEL_FILE,
         init_mode=init_mode,
         time_limit_sec=tl,
+        time_limit_hours=rtl,
+        avg_speed_units_per_hour=speed,
+        unload_time_minutes=unload,
     )
 
     # Vérification + affichage
@@ -267,7 +283,7 @@ def main(
         for m in msgs:
             print(" -", m)
 
-    # Sauvegarde solution (.sol) avec IDs originaux
+    # Sauvegarde solution (.sol) avec IDs originaux et durées
     base = instance_label or "instance"
     sol_path = f"solution_{base}.sol"
     write_solution_text(
@@ -276,6 +292,9 @@ def main(
         sol_path,
         include_depot=False,
         original_id_from_index=original_ids_list,
+        avg_speed_units_per_hour=speed,
+        unload_time_minutes=unload,
+        show_duration=(rtl > 0),
     )
     print(f"[Run] Solution écrite: {sol_path}")
 
@@ -289,11 +308,11 @@ def main(
             inst,
             best.routes,
             title=title,
-            save_path=img_path,   # on sauvegarde aussi l'image
-            show=True,            # on affiche la fenêtre
+            save_path=img_path,
+            show=True,
             annotate=False,
             dpi=140,
-            connect_depot=False,  # segments entre clients uniquement (plus lisible)
+            connect_depot=False,
         )
         print(f"[Run] Image sauvegardée: {img_path}")
     except ImportError:
@@ -301,14 +320,16 @@ def main(
 
 
 if __name__ == "__main__":
-    # Exemples:
-
+    # Exemple avec contraintes de temps:
     main(
         instance=pathfile,
         time_limit_sec=30.0,
-        multi=True,
-        md_n=4,
-        md_types="ABAB",
+        route_time_limit_hours=24.0,
+        avg_speed=90.0,
+        unload_time_minutes=10.0,
+        #multi=True,
+        md_n=3,
+        md_types="A",
         md_seed=42,
-        md_plot_connect_depot=False,
+        md_plot_connect_depot=True,
     )

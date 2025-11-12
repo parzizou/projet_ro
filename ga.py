@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
 ga.py
-Algorithme génétique pour le CVRP:
+Algorithme génétique pour le CVRP avec contraintes de temps:
 - Représentation: permutation globale des clients (giant tour)
-- Split DP pour obtenir des tournées faisables
+- Split DP pour obtenir des tournées faisables (capacité + temps)
 - 2-opt intra-route optionnel (probabiliste pour gagner du temps)
 - Sélection par tournoi, crossover OX, mutation swap/inversion
 - Limite de temps pour garantir < ~3 minutes par défaut
@@ -19,6 +19,11 @@ Diversification (nouveau):
 - Restart partiel si forte stagnation prolongée
 - Mutations supplémentaires: insertion et scramble
 - Mutation adaptative optionnelle (augmente pm si stagnation)
+
+Contraintes de temps (nouveau):
+- time_limit_hours: durée max d'une tournée en heures
+- avg_speed: vitesse moyenne des véhicules
+- unload_time: temps de déchargement par client
 """
 
 from __future__ import annotations
@@ -31,7 +36,7 @@ import os
 from cvrp_data import CVRPInstance
 from split import split_giant_tour
 from localsearch import two_opt_route
-from solution import solution_total_cost
+from solution import solution_total_cost, calculate_route_duration
 
 
 @dataclass
@@ -143,12 +148,26 @@ def evaluate_perm(
     rng: random.Random,
     use_2opt: bool,
     two_opt_prob: float,
+    time_limit_hours: float = 0.0,
+    avg_speed_units_per_hour: float = 1.0,
+    unload_time_minutes: float = 0.0,
+    time_violations: List[int] | None = None,
 ) -> Tuple[List[List[int]], int]:
     """
     Split la permutation en routes faisables, applique 2-opt (optionnel/probabiliste), calcule le coût.
     - two_opt_prob: probabilité d'appliquer 2-opt sur les routes de cet individu.
+    - time_violations: liste pour accumuler les violations de temps
     """
-    routes = split_giant_tour(perm, inst)
+    routes, viols = split_giant_tour(
+        perm, inst,
+        time_limit_hours=time_limit_hours,
+        avg_speed_units_per_hour=avg_speed_units_per_hour,
+        unload_time_minutes=unload_time_minutes,
+    )
+    
+    if time_violations is not None and viols:
+        time_violations.extend(viols)
+    
     if use_2opt and rng.random() < max(0.0, min(1.0, two_opt_prob)):
         # 2-opt intra-route seulement pour routes non triviales
         routes = [two_opt_route(r, inst) if len(r) >= 4 else r for r in routes]
@@ -174,12 +193,20 @@ def _new_random_individual(
     rng: random.Random,
     use_2opt: bool,
     two_opt_prob: float,
+    time_limit_hours: float = 0.0,
+    avg_speed_units_per_hour: float = 1.0,
+    unload_time_minutes: float = 0.0,
 ) -> Individual:
     depot = inst.depot_index
     base = [i for i in range(inst.dimension) if i != depot]
     rng.shuffle(base)
     perm = base[:]
-    routes, cost = evaluate_perm(perm, inst, rng, use_2opt, two_opt_prob)
+    routes, cost = evaluate_perm(
+        perm, inst, rng, use_2opt, two_opt_prob,
+        time_limit_hours=time_limit_hours,
+        avg_speed_units_per_hour=avg_speed_units_per_hour,
+        unload_time_minutes=unload_time_minutes,
+    )
     return Individual(perm=perm, routes=routes, cost=cost)
 
 
@@ -189,8 +216,11 @@ def make_initial_population(
     rng: random.Random,
     use_2opt: bool,
     verbose: bool = False,
-    init_two_opt_prob: float = 0.6,  # un peu de 2-opt au départ pour de bonnes bases
-    init_mode: str = "nn_plus_random",  # "nn_plus_random" (défaut) ou "all_random"
+    init_two_opt_prob: float = 0.6,
+    init_mode: str = "nn_plus_random",
+    time_limit_hours: float = 0.0,
+    avg_speed_units_per_hour: float = 1.0,
+    unload_time_minutes: float = 0.0,
 ) -> List[Individual]:
     """
     Construit la population initiale.
@@ -204,27 +234,45 @@ def make_initial_population(
 
     depot = inst.depot_index
     base = [i for i in range(inst.dimension) if i != depot]
-    report_every = max(1, pop_size // 10)  # ~10% de progression
+    report_every = max(1, pop_size // 10)
 
     if init_mode == "all_random":
         for idx in range(pop_size):
             rng.shuffle(base)
             p = base[:]
-            routes, cost = evaluate_perm(p, inst, rng, use_2opt, two_opt_prob=init_two_opt_prob if use_2opt else 0.0)
+            routes, cost = evaluate_perm(
+                p, inst, rng, use_2opt,
+                two_opt_prob=init_two_opt_prob if use_2opt else 0.0,
+                time_limit_hours=time_limit_hours,
+                avg_speed_units_per_hour=avg_speed_units_per_hour,
+                unload_time_minutes=unload_time_minutes,
+            )
             pop.append(Individual(perm=p, routes=routes, cost=cost))
             if verbose and ((idx + 1) % report_every == 0 or idx == pop_size - 1):
                 print(f"[Init] ... {idx + 1}/{pop_size} individus évalués", flush=True)
     else:
-        # 1) un individu greedy nearest-neighbor (toujours 2-opt pour un bon point de départ)
+        # 1) un individu greedy nearest-neighbor
         nn = nearest_neighbor_perm(inst, rng)
-        routes, cost = evaluate_perm(nn[:], inst, rng, use_2opt, two_opt_prob=1.0 if use_2opt else 0.0)
+        routes, cost = evaluate_perm(
+            nn[:], inst, rng, use_2opt,
+            two_opt_prob=1.0 if use_2opt else 0.0,
+            time_limit_hours=time_limit_hours,
+            avg_speed_units_per_hour=avg_speed_units_per_hour,
+            unload_time_minutes=unload_time_minutes,
+        )
         pop.append(Individual(perm=nn[:], routes=routes, cost=cost))
 
         # 2) le reste aléatoire
         for idx in range(pop_size - 1):
             rng.shuffle(base)
             p = base[:]
-            routes, cost = evaluate_perm(p, inst, rng, use_2opt, two_opt_prob=init_two_opt_prob if use_2opt else 0.0)
+            routes, cost = evaluate_perm(
+                p, inst, rng, use_2opt,
+                two_opt_prob=init_two_opt_prob if use_2opt else 0.0,
+                time_limit_hours=time_limit_hours,
+                avg_speed_units_per_hour=avg_speed_units_per_hour,
+                unload_time_minutes=unload_time_minutes,
+            )
             pop.append(Individual(perm=p, routes=routes, cost=cost))
 
             if verbose and ((idx + 2) % report_every == 0 or idx == pop_size - 2):
@@ -248,45 +296,36 @@ def genetic_algorithm(
     inst: CVRPInstance,
     pop_size: int = 40,
     generations: int = 100000,
-    tournament_k: int = 5,           # -1 par défaut (moins de pression de sélection)
-    elitism: int = 3,                # un peu plus bas pour garder de la place à la diversité
-    pc: float = 0.50,                # crossover probability
-    pm: float = 0.10,                # mutation probability de base
+    tournament_k: int = 5,
+    elitism: int = 3,
+    pc: float = 0.50,
+    pm: float = 0.10,
     seed: int | None = 1,
     use_2opt: bool = True,
     verbose: bool = True,
     log_interval: int = 10,
     two_opt_prob: float = 0.6,
-    time_limit_sec: float = 20000.0,  # limite de temps en secondes (0 = pas de limite)
-    target_optimum: int | None = None,  # valeur optimale connue (pour gap%)
-    stop_on_file: str | None = None,    # chemin d'un fichier sentinelle pour arrêt propre
-    init_mode: str = "nn_plus_random",  # "nn_plus_random" ou "all_random"
-
-    # Diversification (nouveaux paramètres)
-    immigrants_frac: float = 0.1,      # fraction d'immigrants aléatoires ajoutés à chaque génération
-    duplicate_avoidance: bool = True,   # éviter d'ajouter 2x la même structure de routes
-    stagnation_shake_gens: int = 60,    # après X générations sans amélioration -> shake
-    stagnation_restart_gens: int = 180, # après Y générations sans amélioration -> restart partiel
-    adaptive_mutation: bool = True,     # pm augmente avec la stagnation
-
-    # Intégration tests: si True, renvoie (best, metrics) au lieu de seulement best
+    time_limit_sec: float = 20000.0,
+    target_optimum: int | None = None,
+    stop_on_file: str | None = None,
+    init_mode: str = "nn_plus_random",
+    immigrants_frac: float = 0.1,
+    duplicate_avoidance: bool = True,
+    stagnation_shake_gens: int = 60,
+    stagnation_restart_gens: int = 180,
+    adaptive_mutation: bool = True,
     return_metrics: bool = False,
+    # Nouveaux paramètres pour contraintes de temps
+    time_limit_hours: float = 0.0,           # limite de temps par tournée en heures
+    avg_speed_units_per_hour: float = 1.0,  # vitesse moyenne
+    unload_time_minutes: float = 0.0,        # temps de déchargement par client
 ):
     """
-    Boucle principale du GA. Retourne le meilleur individu trouvé.
-    Si return_metrics=True, retourne (best, metrics) avec:
-      metrics = {
-        'elapsed_sec': float,
-        'generations_done': int,
-        'stopped_by': str|None,
-        'best_cost': int,
-        'avg_cost_last': float,
-        'routes_best': int,
-        'pm_eff_last': float,
-        'two_opt_prob_eff_last': float
-      }
+    Boucle principale du GA avec gestion des contraintes de temps.
+    Retourne le meilleur individu trouvé.
     """
     rng = random.Random(seed)
+    time_violations_set: Set[int] = set()
 
     def fmt_gap(cost: int) -> str:
         if target_optimum is None or target_optimum <= 0:
@@ -303,7 +342,9 @@ def genetic_algorithm(
         verbose=verbose,
         init_two_opt_prob=0.5,
         init_mode=init_mode,
-        
+        time_limit_hours=time_limit_hours,
+        avg_speed_units_per_hour=avg_speed_units_per_hour,
+        unload_time_minutes=unload_time_minutes,
     )
     pop.sort(key=lambda ind: ind.cost)
     best = pop[0]
@@ -311,12 +352,14 @@ def genetic_algorithm(
 
     if verbose:
         bcost, avg = _stats(pop)
-        print(f"[GA] Départ: best={bcost:.0f} | avg={avg:.0f} | #routes_best={len(best.routes)} | init_mode={init_mode}{fmt_gap(bcost)}", flush=True)
+        time_info = ""
+        if time_limit_hours > 0:
+            time_info = f" | time_limit={time_limit_hours:.1f}h"
+        print(f"[GA] Départ: best={bcost:.0f} | avg={avg:.0f} | #routes_best={len(best.routes)} | init_mode={init_mode}{time_info}{fmt_gap(bcost)}", flush=True)
 
-    stopped_by = None  # "time", "file", "keyboard", or None
-    gen = 0            # compteur pour métriques de fin
+    stopped_by = None
+    gen = 0
 
-    # Aides: pour éviter les doublons de routes
     route_signatures: Set[Tuple[Tuple[int, ...], ...]] = set(_route_signature(ind.routes) for ind in pop)
 
     pm_eff_last = None
@@ -324,14 +367,12 @@ def genetic_algorithm(
 
     try:
         for gen in range(1, generations + 1):
-            # Time limit
             if time_limit_sec and (time.time() - start_time) >= time_limit_sec:
                 stopped_by = "time"
                 if verbose:
                     print(f"[GA] Time limit atteinte ({time_limit_sec:.1f}s). Arrêt anticipé à gen {gen-1}.", flush=True)
                 break
 
-            # Stop-on-file
             if stop_on_file and os.path.exists(stop_on_file):
                 stopped_by = "file"
                 if verbose:
@@ -340,7 +381,6 @@ def genetic_algorithm(
 
             stale = gen - last_improve_gen
             stale_ratio = min(1.0, stale / max(1, stagnation_restart_gens))
-            # Mutation adaptative + 2-opt plus léger si stagnation
             pm_eff = pm * (1.0 + 0.6 * stale_ratio) if adaptive_mutation else pm
             pm_eff = max(0.01, min(0.95, pm_eff))
             two_opt_prob_eff = two_opt_prob * (1.0 - 0.30 * stale_ratio) if adaptive_mutation else two_opt_prob
@@ -350,22 +390,18 @@ def genetic_algorithm(
 
             new_pop: List[Individual] = []
 
-            # Élitisme
             elites = pop[:elitism]
             new_pop.extend(elites)
 
-            # Reproduction
             while len(new_pop) < pop_size:
                 p1 = tournament_select(pop, tournament_k, rng)
                 p2 = tournament_select(pop, tournament_k, rng)
 
-                # Crossover
                 if rng.random() < pc:
                     c1_perm, c2_perm = order_crossover(p1.perm, p2.perm, rng)
                 else:
                     c1_perm, c2_perm = p1.perm[:], p2.perm[:]
 
-                # Mutation (adaptative)
                 if rng.random() < pm_eff:
                     if rng.random() < 0.25:
                         mutate_insertion(c1_perm, rng)
@@ -385,17 +421,35 @@ def genetic_algorithm(
                     else:
                         mutate_inversion(c2_perm, rng)
 
-                # Évaluation
-                c1_routes, c1_cost = evaluate_perm(c1_perm, inst, rng, use_2opt, two_opt_prob=two_opt_prob_eff)
-                c2_routes, c2_cost = evaluate_perm(c2_perm, inst, rng, use_2opt, two_opt_prob=two_opt_prob_eff)
+                viols_temp: List[int] = []
+                c1_routes, c1_cost = evaluate_perm(
+                    c1_perm, inst, rng, use_2opt, two_opt_prob=two_opt_prob_eff,
+                    time_limit_hours=time_limit_hours,
+                    avg_speed_units_per_hour=avg_speed_units_per_hour,
+                    unload_time_minutes=unload_time_minutes,
+                    time_violations=viols_temp,
+                )
+                c2_routes, c2_cost = evaluate_perm(
+                    c2_perm, inst, rng, use_2opt, two_opt_prob=two_opt_prob_eff,
+                    time_limit_hours=time_limit_hours,
+                    avg_speed_units_per_hour=avg_speed_units_per_hour,
+                    unload_time_minutes=unload_time_minutes,
+                    time_violations=viols_temp,
+                )
+                
+                time_violations_set.update(viols_temp)
 
-                # Anti-duplicates: réessayer via heavy mutate quelques fois
                 if duplicate_avoidance:
                     tries = 0
                     sig1 = _route_signature(c1_routes)
                     while sig1 in route_signatures and tries < 2:
                         heavy_mutate(c1_perm, rng)
-                        c1_routes, c1_cost = evaluate_perm(c1_perm, inst, rng, use_2opt, two_opt_prob=two_opt_prob_eff)
+                        c1_routes, c1_cost = evaluate_perm(
+                            c1_perm, inst, rng, use_2opt, two_opt_prob=two_opt_prob_eff,
+                            time_limit_hours=time_limit_hours,
+                            avg_speed_units_per_hour=avg_speed_units_per_hour,
+                            unload_time_minutes=unload_time_minutes,
+                        )
                         sig1 = _route_signature(c1_routes)
                         tries += 1
 
@@ -408,34 +462,44 @@ def genetic_algorithm(
                         sig2 = _route_signature(c2_routes)
                         while sig2 in route_signatures and tries < 2:
                             heavy_mutate(c2_perm, rng)
-                            c2_routes, c2_cost = evaluate_perm(c2_perm, inst, rng, use_2opt, two_opt_prob=two_opt_prob_eff)
+                            c2_routes, c2_cost = evaluate_perm(
+                                c2_perm, inst, rng, use_2opt, two_opt_prob=two_opt_prob_eff,
+                                time_limit_hours=time_limit_hours,
+                                avg_speed_units_per_hour=avg_speed_units_per_hour,
+                                unload_time_minutes=unload_time_minutes,
+                            )
                             sig2 = _route_signature(c2_routes)
                             tries += 1
                     new_pop.append(Individual(c2_perm, c2_routes, c2_cost))
                     route_signatures.add(_route_signature(c2_routes))
 
-            # Diversification: random immigrants (remplace les pires)
             if immigrants_frac > 0.0:
                 m = int(pop_size * max(0.0, min(0.5, immigrants_frac)))
                 if m > 0:
-                    # tri avant remplacement
                     new_pop.sort(key=lambda ind: ind.cost)
                     replaced = 0
                     for _ in range(m):
-                        immigrant = _new_random_individual(inst, rng, use_2opt, two_opt_prob_eff * 0.5)
-                        # éviter doublons
+                        immigrant = _new_random_individual(
+                            inst, rng, use_2opt, two_opt_prob_eff * 0.5,
+                            time_limit_hours=time_limit_hours,
+                            avg_speed_units_per_hour=avg_speed_units_per_hour,
+                            unload_time_minutes=unload_time_minutes,
+                        )
                         if duplicate_avoidance:
                             sig = _route_signature(immigrant.routes)
                             tries = 0
                             while sig in route_signatures and tries < 3:
-                                immigrant = _new_random_individual(inst, rng, use_2opt, two_opt_prob_eff * 0.5)
+                                immigrant = _new_random_individual(
+                                    inst, rng, use_2opt, two_opt_prob_eff * 0.5,
+                                    time_limit_hours=time_limit_hours,
+                                    avg_speed_units_per_hour=avg_speed_units_per_hour,
+                                    unload_time_minutes=unload_time_minutes,
+                                )
                                 sig = _route_signature(immigrant.routes)
                                 tries += 1
                             route_signatures.add(sig)
                         new_pop[-(1 + replaced)] = immigrant
                         replaced += 1
-                    if verbose and (gen % max(1, log_interval) == 0):
-                        print(f"[GA] Gen {gen}: immigrants={m}", flush=True)
 
             pop = new_pop
             pop.sort(key=lambda ind: ind.cost)
@@ -443,43 +507,54 @@ def genetic_algorithm(
                 best = pop[0]
                 last_improve_gen = gen
 
-            # Stagnation: shake / restart
             stale = gen - last_improve_gen
             if stale > 0 and stale % max(1, stagnation_shake_gens) == 0 and stale < stagnation_restart_gens:
-                # shake: heavy mutate une partie de la pop (hors élites), puis réévaluer
                 start = elitism
                 end = min(pop_size, elitism + max(1, pop_size // 3))
                 for idx in range(start, end):
                     ind = pop[idx]
                     heavy_mutate(ind.perm, rng)
-                    ind.routes, ind.cost = evaluate_perm(ind.perm, inst, rng, use_2opt, two_opt_prob=two_opt_prob_eff)
+                    ind.routes, ind.cost = evaluate_perm(
+                        ind.perm, inst, rng, use_2opt, two_opt_prob=two_opt_prob_eff,
+                        time_limit_hours=time_limit_hours,
+                        avg_speed_units_per_hour=avg_speed_units_per_hour,
+                        unload_time_minutes=unload_time_minutes,
+                    )
                 pop.sort(key=lambda ind: ind.cost)
                 if verbose:
                     print(f"[GA] Gen {gen}: shake population (stale={stale})", flush=True)
-                # reset signatures (recalcul rapide)
                 route_signatures = set(_route_signature(ind.routes) for ind in pop)
 
             if stale >= stagnation_restart_gens:
-                # restart partiel: garder le meilleur, réensemencer le reste
                 keep = 1
                 survivors = pop[:keep]
                 new_pop = survivors[:]
                 route_signatures = set(_route_signature(ind.routes) for ind in survivors)
                 while len(new_pop) < pop_size:
-                    immigrant = _new_random_individual(inst, rng, use_2opt, two_opt_prob_eff * 0.4)
+                    immigrant = _new_random_individual(
+                        inst, rng, use_2opt, two_opt_prob_eff * 0.4,
+                        time_limit_hours=time_limit_hours,
+                        avg_speed_units_per_hour=avg_speed_units_per_hour,
+                        unload_time_minutes=unload_time_minutes,
+                    )
                     if duplicate_avoidance:
                         sig = _route_signature(immigrant.routes)
                         tries = 0
                         while sig in route_signatures and tries < 3:
                             heavy_mutate(immigrant.perm, rng)
-                            immigrant.routes, immigrant.cost = evaluate_perm(immigrant.perm, inst, rng, use_2opt, two_opt_prob=two_opt_prob_eff * 0.4)
+                            immigrant.routes, immigrant.cost = evaluate_perm(
+                                immigrant.perm, inst, rng, use_2opt, two_opt_prob=two_opt_prob_eff * 0.4,
+                                time_limit_hours=time_limit_hours,
+                                avg_speed_units_per_hour=avg_speed_units_per_hour,
+                                unload_time_minutes=unload_time_minutes,
+                            )
                             sig = _route_signature(immigrant.routes)
                             tries += 1
                         route_signatures.add(sig)
                     new_pop.append(immigrant)
                 pop = new_pop
                 pop.sort(key=lambda ind: ind.cost)
-                last_improve_gen = gen  # on repart
+                last_improve_gen = gen
                 if verbose:
                     print(f"[GA] Gen {gen}: RESTART partiel (stale={stale})", flush=True)
 
@@ -501,12 +576,16 @@ def genetic_algorithm(
     if verbose:
         total_elapsed = time.time() - start_time
         print(f"[GA] Terminé après {total_elapsed:.1f}s. Meilleur coût trouvé: {best.cost} | #routes={len(best.routes)}", flush=True)
+        
+        if time_violations_set:
+            print(f"\n[AVERTISSEMENT] {len(time_violations_set)} client(s) dépassent la limite de temps seuls:", flush=True)
+            for client_idx in sorted(time_violations_set):
+                print(f"  - Client {client_idx}", flush=True)
+            print("Ces clients ont été placés dans des tournées dédiées.", flush=True)
 
-    # Retour standard
     if not return_metrics:
         return best
 
-    # Retour avec métriques pour les tests
     total_elapsed = time.time() - start_time
     bcost, avg_last = _stats(pop)
     metrics: Dict[str, object] = {

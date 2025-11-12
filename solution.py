@@ -3,6 +3,7 @@
 solution.py
 Outils autour des solutions VRP:
 - calcul du coût total
+- calcul de la durée d'une tournée (avec vitesse et temps de déchargement)
 - vérification des contraintes
 - texte lisible (proche CVRPLIB)
 - lecture d'un .sol texte et calcul du coût
@@ -25,6 +26,44 @@ def solution_total_cost(routes: List[List[int]], inst: CVRPInstance) -> int:
             total += d[r[i]][r[i + 1]]
         total += d[r[-1]][depot]
     return total
+
+
+def calculate_route_duration(
+    route: List[int],
+    inst: CVRPInstance,
+    avg_speed_units_per_hour: float = 1.0,
+    unload_time_minutes: float = 0.0,
+) -> float:
+    """
+    Calcule la durée totale d'une tournée en heures.
+    
+    Paramètres:
+    - route: liste des clients (sans le dépôt)
+    - inst: instance CVRP
+    - avg_speed_units_per_hour: vitesse moyenne en unités de distance par heure
+    - unload_time_minutes: temps de déchargement par client en minutes
+    
+    Retourne: durée en heures
+    """
+    if not route:
+        return 0.0
+    
+    d = inst.dist
+    depot = inst.depot_index
+    
+    # Distance totale
+    total_dist = d[depot][route[0]]
+    for i in range(len(route) - 1):
+        total_dist += d[route[i]][route[i + 1]]
+    total_dist += d[route[-1]][depot]
+    
+    # Temps de trajet en heures
+    travel_time_hours = total_dist / avg_speed_units_per_hour if avg_speed_units_per_hour > 0 else 0.0
+    
+    # Temps de déchargement en heures
+    unload_time_hours = (len(route) * unload_time_minutes) / 60.0
+    
+    return travel_time_hours + unload_time_hours
 
 
 def verify_solution(routes: List[List[int]], inst: CVRPInstance) -> Tuple[bool, List[str]]:
@@ -71,12 +110,16 @@ def write_solution_text(
     path: str,
     include_depot: bool = False,
     original_id_from_index: Optional[List[int]] = None,
+    avg_speed_units_per_hour: float = 1.0,
+    unload_time_minutes: float = 0.0,
+    show_duration: bool = False,
 ) -> None:
     """
     Écrit un fichier solution lisible.
     - Par défaut on affiche les IDs "internes" (0-based, depot=0). Tu peux passer original_id_from_index
       pour mapper vers les IDs originaux du fichier .vrp (1-based en général).
     - include_depot: si True, on affiche dépôt au début/fin des routes.
+    - show_duration: si True, affiche la durée de chaque tournée
     """
     def fmt_idx(i: int) -> str:
         if original_id_from_index:
@@ -91,7 +134,18 @@ def write_solution_text(
         seq += [fmt_idx(i) for i in r]
         if include_depot:
             seq.append(fmt_idx(inst.depot_index))
-        lines.append(f"Route #{k}: " + " ".join(seq))
+        
+        route_line = f"Route #{k}: " + " ".join(seq)
+        
+        if show_duration:
+            duration = calculate_route_duration(
+                r, inst,
+                avg_speed_units_per_hour=avg_speed_units_per_hour,
+                unload_time_minutes=unload_time_minutes,
+            )
+            route_line += f" | Durée: {duration:.2f}h"
+        
+        lines.append(route_line)
 
     total = solution_total_cost(routes, inst)
     lines.append(f"Cost {total}")
@@ -123,6 +177,9 @@ def read_simple_sol_and_cost(
                 # Format: "Route #k: a b c ..."
                 if ":" not in line:
                     continue
+                # Extraire la partie avant le pipe (pour ignorer durée)
+                if "|" in line:
+                    line = line.split("|")[0]
                 parts = line.split(":", 1)[1].strip().split()
                 seq = []
                 for tok in parts:

@@ -2,10 +2,15 @@
 """
 split.py
 Algorithme de split (programmation dynamique) pour transformer une permutation globale
-des clients (giant tour) en routes faisables qui respectent la capacité.
+des clients (giant tour) en routes faisables qui respectent la capacité ET les contraintes de temps.
 
 Entrée: permutation des indices clients (hors dépôt)
 Sortie: liste de routes (chaque route = liste d'indices clients, hors dépôt)
+
+Nouvelles fonctionnalités:
+- Prise en compte de la limite de temps par tournée (time_limit_hours)
+- Calcul du temps de trajet (distance / vitesse) + temps de déchargement par client
+- Notification si un client seul dépasse la limite de temps
 
 Accélération:
 - Si Numba est disponible, on JIT-compile le coeur DP pour accélérer fortement le split.
@@ -13,7 +18,7 @@ Accélération:
 """
 
 from __future__ import annotations
-from typing import List
+from typing import List, Tuple, Optional
 from cvrp_data import CVRPInstance
 
 # ======== Option accélérée via Numba (auto si dispo) ========
@@ -23,26 +28,33 @@ try:
     from numba import njit
 
     @njit(cache=True)
-    def _split_dp_numba(
+    def _split_dp_numba_with_time(
         perm: np.ndarray,           # int64 [n]
         dist: np.ndarray,           # int64 [N, N]
         demands: np.ndarray,        # int64 [N]
         depot: int,                 # scalaire
-        capacity: int               # scalaire
+        capacity: int,              # scalaire
+        time_limit_sec: float,      # limite de temps en secondes (0 = pas de limite)
+        avg_speed: float,           # vitesse moyenne en unités de distance par seconde
+        unload_time_sec: float,     # temps de déchargement par client en secondes
     ):
         """
-        Calcule le DP du split:
-        - Retourne (pred, last_cost) où pred est int64 [n+1], last_cost = cost[n]
+        Calcule le DP du split avec contraintes de capacité ET de temps:
+        - Retourne (pred, last_cost, violations) où violations est un tableau des clients problématiques
         - Reconstruction des routes faite côté Python.
         """
         n = perm.shape[0]
         INF = 10**15
         cost = np.empty(n + 1, dtype=np.int64)
         pred = np.empty(n + 1, dtype=np.int64)
+        violations = np.zeros(n, dtype=np.int64)  # 1 si client i pose problème seul
+        
         for i in range(n + 1):
             cost[i] = INF
             pred[i] = -1
         cost[0] = 0
+
+        use_time_limit = time_limit_sec > 0.0
 
         for i in range(n):
             load = 0
@@ -50,13 +62,29 @@ try:
             load += demands[last]
             if load > capacity:
                 continue
-            seg_cost = dist[depot, last]
+            seg_dist = dist[depot, last]
+            
+            # Temps pour cette route: aller au premier client + décharger + retour
+            if use_time_limit:
+                seg_time = (seg_dist / avg_speed) + unload_time_sec + (dist[last, depot] / avg_speed)
+                if seg_time > time_limit_sec:
+                    # Un seul client dépasse déjà la limite
+                    violations[i] = 1
+                    # On accepte quand même pour éviter l'infaisabilité totale
+                    pass
 
             # cas j == i
-            total = cost[i] + seg_cost + dist[last, depot]
-            if total < cost[i + 1]:
-                cost[i + 1] = total
-                pred[i + 1] = i
+            total = cost[i] + seg_dist + dist[last, depot]
+            if use_time_limit:
+                seg_time_check = (seg_dist / avg_speed) + unload_time_sec + (dist[last, depot] / avg_speed)
+                if seg_time_check <= time_limit_sec or violations[i] == 1:
+                    if total < cost[i + 1]:
+                        cost[i + 1] = total
+                        pred[i + 1] = i
+            else:
+                if total < cost[i + 1]:
+                    cost[i + 1] = total
+                    pred[i + 1] = i
 
             # cas j > i
             for j in range(i + 1, n):
@@ -64,14 +92,24 @@ try:
                 load += demands[node]
                 if load > capacity:
                     break
-                seg_cost += dist[last, node]
+                seg_dist += dist[last, node]
+                
+                if use_time_limit:
+                    # Temps total: depot->perm[i]->...->perm[j]->depot + déchargements
+                    travel_time = (seg_dist / avg_speed) + (dist[node, depot] / avg_speed)
+                    unload_total = unload_time_sec * (j - i + 1)
+                    total_time = travel_time + unload_total
+                    
+                    if total_time > time_limit_sec:
+                        break  # Plus la peine d'étendre cette route
+                
                 last = node
-                total = cost[i] + seg_cost + dist[last, depot]
+                total = cost[i] + seg_dist + dist[last, depot]
                 if total < cost[j + 1]:
                     cost[j + 1] = total
                     pred[j + 1] = i
 
-        return pred, cost[n]
+        return pred, cost[n], violations
 
     _NUMBA_AVAILABLE = True
 except Exception:
@@ -89,31 +127,52 @@ def _ensure_np_arrays(inst: CVRPInstance):
         inst._demands_np = _np.asarray(inst.demands, dtype=_np.int64)
 
 
-def split_giant_tour(perm: List[int], inst: CVRPInstance) -> List[List[int]]:
+def split_giant_tour(
+    perm: List[int],
+    inst: CVRPInstance,
+    time_limit_hours: float = 0.0,       # limite en heures (0 = pas de limite)
+    avg_speed_units_per_hour: float = 1.0,  # vitesse en unités de distance / heure
+    unload_time_minutes: float = 0.0,    # temps de déchargement par client en minutes
+) -> Tuple[List[List[int]], List[int]]:
     """
-    Split DP standard:
+    Split DP avec contraintes de capacité et de temps:
     - On considère des arcs de i -> j représentant une tournée faisable
       depot -> perm[i] -> ... -> perm[j] -> depot
     - On calcule le plus court chemin de 0 à n dans ce DAG implicite.
+    - Contraintes de temps: chaque tournée ne doit pas dépasser time_limit_hours
 
     perm: liste des indices clients (0-based) SANS le dépôt
-    Retourne: list de routes (listes d'indices clients, sans le dépôt)
+    Retourne: (routes, violations_list) où
+        routes: list de routes (listes d'indices clients, sans le dépôt)
+        violations_list: liste des indices clients qui violent la contrainte de temps seuls
     """
+    # Conversion des unités de temps
+    time_limit_sec = time_limit_hours * 3600.0 if time_limit_hours > 0.0 else 0.0
+    avg_speed = avg_speed_units_per_hour / 3600.0 if avg_speed_units_per_hour > 0.0 else 1.0
+    unload_time_sec = unload_time_minutes * 60.0
+
     # Fast path Numba si dispo
     if _NUMBA_AVAILABLE:
         _ensure_np_arrays(inst)
         import numpy as _np
         perm_arr = _np.asarray(perm, dtype=_np.int64)
-        pred, last_cost = _split_dp_numba(
+        pred, last_cost, violations = _split_dp_numba_with_time(
             perm_arr,
             inst._dist_np,     # type: ignore[attr-defined]
             inst._demands_np,  # type: ignore[attr-defined]
             int(inst.depot_index),
             int(inst.capacity),
+            float(time_limit_sec),
+            float(avg_speed),
+            float(unload_time_sec),
         )
         INF = 10**15
         if last_cost >= INF:
             raise RuntimeError("Impossible de splitter la permutation en tournées faisables (capacité trop faible ?)")
+        
+        # Extraction des violations
+        violations_list = [int(perm[i]) for i in range(len(perm)) if violations[i] == 1]
+        
         # Reconstruction en Python
         routes: List[List[int]] = []
         t = len(perm)
@@ -125,36 +184,52 @@ def split_giant_tour(perm: List[int], inst: CVRPInstance) -> List[List[int]]:
             routes.append(route)
             t = i
         routes.reverse()
-        return routes
+        return routes, violations_list
 
-    # ======== Fallback pur Python (ancien code) ========
+    # ======== Fallback pur Python (avec gestion du temps) ========
     n = len(perm)
     INF = 10 ** 18
     cost = [INF] * (n + 1)
     pred = [-1] * (n + 1)
     cost[0] = 0
+    violations_list: List[int] = []
 
     C = inst.capacity
     depot = inst.depot_index
     d = inst.dist
     dem = inst.demands
 
+    use_time_limit = time_limit_sec > 0.0
+
     for i in range(n):
         load = 0
         if i >= 0:
-            # coût de démarrer la tournée au client perm[i]
             last = perm[i]
             load += dem[last]
             if load > C:
                 continue
-            # distance depot -> premier client
-            seg_cost = d[depot][last]
+            seg_dist = d[depot][last]
+
+            # Vérification temps pour un seul client
+            if use_time_limit:
+                travel_time = (seg_dist / avg_speed) + (d[last][depot] / avg_speed)
+                total_time = travel_time + unload_time_sec
+                if total_time > time_limit_sec:
+                    violations_list.append(last)
 
             # cas j == i
-            best = cost[i] + seg_cost + d[last][depot]
-            if best < cost[i + 1]:
-                cost[i + 1] = best
-                pred[i + 1] = i
+            best = cost[i] + seg_dist + d[last][depot]
+            if use_time_limit:
+                travel_time = (seg_dist / avg_speed) + (d[last][depot] / avg_speed)
+                total_time = travel_time + unload_time_sec
+                if total_time <= time_limit_sec or last in violations_list:
+                    if best < cost[i + 1]:
+                        cost[i + 1] = best
+                        pred[i + 1] = i
+            else:
+                if best < cost[i + 1]:
+                    cost[i + 1] = best
+                    pred[i + 1] = i
 
             # j > i
             for j in range(i + 1, n):
@@ -162,17 +237,26 @@ def split_giant_tour(perm: List[int], inst: CVRPInstance) -> List[List[int]]:
                 load += dem[node]
                 if load > C:
                     break
-                seg_cost += d[last][node]
+                seg_dist += d[last][node]
+                
+                if use_time_limit:
+                    travel_dist = seg_dist + d[node][depot]
+                    travel_time = travel_dist / avg_speed
+                    unload_total = unload_time_sec * (j - i + 1)
+                    total_time = travel_time + unload_total
+                    
+                    if total_time > time_limit_sec:
+                        break
+                
                 last = node
-                total = cost[i] + seg_cost + d[last][depot]
+                total = cost[i] + seg_dist + d[last][depot]
                 if total < cost[j + 1]:
                     cost[j + 1] = total
                     pred[j + 1] = i
 
     # Reconstruction
     if cost[n] >= INF:
-        # Si cela arrive, c'est qu'il y a un souci de capacité globale (ne devrait pas sur une instance CVRP standard)
-        raise RuntimeError("Impossible de splitter la permutation en tournées faisables (capacité trop faible ?)")
+        raise RuntimeError("Impossible de splitter la permutation en tournées faisables")
 
     routes: List[List[int]] = []
     t = n
@@ -184,4 +268,4 @@ def split_giant_tour(perm: List[int], inst: CVRPInstance) -> List[List[int]]:
         routes.append(route)
         t = i
     routes.reverse()
-    return routes
+    return routes, violations_list

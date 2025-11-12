@@ -22,7 +22,7 @@ import math
 
 from cvrp_data import CVRPInstance
 from ga import genetic_algorithm
-from solution import solution_total_cost
+from solution import solution_total_cost, calculate_route_duration, write_solution_text
 
 
 @dataclass
@@ -248,6 +248,10 @@ def solve_multi_depot(
     init_mode: str = "nn_plus_random",
     verbose_ga: bool = True,
     ga_time_limit_sec: float | None = None,
+    # NOUVEAUX paramètres pour contraintes de temps
+    time_limit_hours: float = 0.0,
+    avg_speed_units_per_hour: float = 1.0,
+    unload_time_minutes: float = 0.0,
 ) -> List[SubResult]:
     results: List[SubResult] = []
     for si in scenario.subinstances:
@@ -264,6 +268,10 @@ def solve_multi_depot(
             init_mode=init_mode,
             verbose=verbose_ga,
             time_limit_sec=float(ga_time_limit_sec) if ga_time_limit_sec is not None else 20000.0,
+            # Transmission des paramètres de temps
+            time_limit_hours=time_limit_hours,
+            avg_speed_units_per_hour=avg_speed_units_per_hour,
+            unload_time_minutes=unload_time_minutes,
         )
         routes_sub = best.routes
         cost = solution_total_cost(routes_sub, si.inst)
@@ -282,9 +290,13 @@ def write_multi_depot_solutions(
     inst_base: CVRPInstance,
     results: List[SubResult],
     original_id_from_baseindex: List[int],
+    avg_speed_units_per_hour: float = 1.0,
+    unload_time_minutes: float = 0.0,
+    show_duration: bool = False,
 ) -> str:
     """
     Écrit un .sol par dépôt et un .sol agrégé. Retourne le chemin du .sol agrégé.
+    - show_duration: si True, affiche la durée de chaque tournée
     """
     total = 0
     for res in results:
@@ -294,7 +306,17 @@ def write_multi_depot_solutions(
         lines = []
         for k, r in enumerate(res.routes_baseindex, start=1):
             seq = [str(original_id_from_baseindex[i]) for i in r]
-            lines.append(f"Route #{k} (Depot d{dep_id} {res.depot.type_char}): " + " ".join(seq))
+            route_line = f"Route #{k} (Depot d{dep_id} {res.depot.type_char}): " + " ".join(seq)
+            
+            if show_duration:
+                duration = calculate_route_duration(
+                    r, inst_base,
+                    avg_speed_units_per_hour=avg_speed_units_per_hour,
+                    unload_time_minutes=unload_time_minutes,
+                )
+                route_line += f" | Durée: {duration:.2f}h"
+            
+            lines.append(route_line)
         lines.append(f"Cost {res.cost}")
         with open(path_dep, "w", encoding="utf-8") as f:
             f.write("\n".join(lines))
@@ -308,7 +330,17 @@ def write_multi_depot_solutions(
         lines.append(f";;; Depot d{res.depot.idx} type={res.depot.type_char} ;;;")
         for r in res.routes_baseindex:
             seq = [str(original_id_from_baseindex[i]) for i in r]
-            lines.append(f"Route #{kglob}: " + " ".join(seq))
+            route_line = f"Route #{kglob}: " + " ".join(seq)
+            
+            if show_duration:
+                duration = calculate_route_duration(
+                    r, inst_base,
+                    avg_speed_units_per_hour=avg_speed_units_per_hour,
+                    unload_time_minutes=unload_time_minutes,
+                )
+                route_line += f" | Durée: {duration:.2f}h"
+            
+            lines.append(route_line)
             kglob += 1
     lines.append(f"Cost {sum(res.cost for res in results)}")
     with open(agg_path, "w", encoding="utf-8") as f:
@@ -330,6 +362,10 @@ def run_multi_depot_pipeline(
     verbose_ga: bool = True,
     do_plot: bool = True,
     ga_time_limit_sec: float | None = None,
+    # NOUVEAUX paramètres pour contraintes de temps
+    time_limit_hours: float = 0.0,
+    avg_speed_units_per_hour: float = 1.0,
+    unload_time_minutes: float = 0.0,
 ):
     # 1) Scénario (dépôts/clients/types/assignations)
     scenario = build_multi_depot_scenario(inst_base, cfg)
@@ -345,14 +381,21 @@ def run_multi_depot_pipeline(
         init_mode=init_mode,
         verbose_ga=verbose_ga,
         ga_time_limit_sec=ga_time_limit_sec,
+        time_limit_hours=time_limit_hours,
+        avg_speed_units_per_hour=avg_speed_units_per_hour,
+        unload_time_minutes=unload_time_minutes,
     )
 
     # 3) Exports .sol
+    show_duration = (time_limit_hours > 0)
     agg_path = write_multi_depot_solutions(
         base_label=base_label,
         inst_base=inst_base,
         results=results,
         original_id_from_baseindex=original_id_from_baseindex,
+        avg_speed_units_per_hour=avg_speed_units_per_hour,
+        unload_time_minutes=unload_time_minutes,
+        show_duration=show_duration,
     )
 
     # 4) Plot agrégé
