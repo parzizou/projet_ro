@@ -1,0 +1,448 @@
+# RÉSUMÉ DES MEILLEURS RÉSULTATS - 2025-11-07 10:39:29
+# Configurations triées par performance (meilleur coût d'abord)
+#
+# FORMAT:
+# Rang | Nom_Config | Coût_Moyen | Coût_Min | Écart-Type | Paramètres
+#================================================================================
+
+RANG  1
+Configuration: Tournament_7
+Coût moyen:   23595.3
+Meilleur:     23344
+Pire:         23800
+Écart-type:   189.06
+Véhicules:    25.7
+Temps:        30.2s
+Paramètres:
+  pop_size       : 100
+  tournament_k   : 7
+  elitism        : 4
+  pc             : 0.95
+  pm             : 0.25
+  use_2opt       : True
+  two_opt_prob   : 0.35
+  time_limit     : 30.0
+  generations    : 50000
+Tous les coûts: [23344, 23642, 23800]
+------------------------------------------------------------
+
+RANG  2
+Configuration: PopSize_140
+Coût moyen:   23816.0
+Meilleur:     23634
+Pire:         23937
+Écart-type:   131.00
+Véhicules:    25.3
+Temps:        30.3s
+Paramètres:
+  pop_size       : 140
+  tournament_k   : 4
+  elitism        : 4
+  pc             : 0.95
+  pm             : 0.25
+  use_2opt       : True
+  two_opt_prob   : 0.35
+  time_limit     : 30.0
+  generations    : 50000
+Tous les coûts: [23937, 23877, 23634]
+------------------------------------------------------------
+
+RANG  3
+Configuration: PopSize_200
+Coût moyen:   23861.3
+Meilleur:     23804
+Pire:         23909
+Écart-type:   43.41
+Véhicules:    24.7
+Temps:        30.4s
+Paramètres:
+  pop_size       : 200
+  tournament_k   : 4
+  elitism        : 4
+  pc             : 0.95
+  pm             : 0.25
+  use_2opt       : True
+  two_opt_prob   : 0.35
+  time_limit     : 30.0
+  generations    : 50000
+Tous les coûts: [23804, 23871, 23909]
+------------------------------------------------------------
+
+RANG  4
+Configuration: Combo_ExploitationHigh
+Coût moyen:   23878.3
+Meilleur:     23489
+Pire:         24235
+Écart-type:   305.43
+Véhicules:    25.0
+Temps:        30.3s
+Paramètres:
+  pop_size       : 120
+  tournament_k   : 5
+  elitism        : 8
+  pc             : 0.95
+  pm             : 0.15
+  use_2opt       : True
+  two_opt_prob   : 0.6
+  time_limit     : 30.0
+  generations    : 50000
+Tous les coûts: [23489, 24235, 23911]
+------------------------------------------------------------
+
+RANG  5
+Configuration: Elitism_6
+Coût moyen:   23901.0
+Meilleur:     23323
+Pire:         24328
+Écart-type:   423.96
+Véhicules:    25.7
+Temps:        30.3s
+Paramètres:
+  pop_size       : 100
+  tournament_k   : 4
+  elitism        : 6
+  pc             : 0.95
+  pm             : 0.25
+  use_2opt       : True
+  two_opt_prob   : 0.35
+  time_limit     : 30.0
+  generations    : 50000
+Tous les coûts: [24328, 23323, 24052]
+------------------------------------------------------------
+
+RANG  6
+Configuration: PopSize_160
+Coût moyen:   23965.7
+Meilleur:     23438
+Pire:         24535
+Écart-type:   448.82
+Véhicules:    24.7
+Temps:        30.2s
+Paramètres:
+  pop_size       : 160
+  tournament_k   : 4
+  elitism        : 4
+  pc             : 0.95
+  pm             : 0.25
+  use_2opt       : True
+  two_opt_prob   : 0.35
+  time_limit     : 30.0
+  generations    : 50000
+Tous les coûts: [23924, 23438, 24535]
+------------------------------------------------------------
+
+RANG  7
+Configuration: TwoOpt_0.4
+Coût moyen:   23974.7
+Meilleur:     23768
+Pire:         24080
+Écart-type:   146.14
+Véhicules:    25.7
+Temps:        30.2s
+Paramètres:
+  pop_size       : 100
+  tournament_k   : 4
+  elitism        : 4
+  pc             : 0.95
+  pm             : 0.25
+  use_2opt       : True
+  two_opt_prob   : 0.4
+  time_limit     : 30.0
+  generations    : 50000
+Tous les coûts: [24080, 23768, 24076]
+------------------------------------------------------------
+
+RANG  8
+Configuration: Mutation_0.15
+Coût moyen:   23985.7
+Meilleur:     23869
+Pire:         24150
+Écart-type:   119.57
+Véhicules:    25.3
+Temps:        30.2s
+Paramètres:
+  pop_size       : 100
+  tournament_k   : 4
+  elitism        : 4
+  pc             : 0.95
+  pm             : 0.15
+  use_2opt       : True
+  two_opt_prob   : 0.35
+  time_limit     : 30.0
+  generations    : 50000
+Tous les coûts: [23938, 23869, 24150]
+------------------------------------------------------------
+
+RANG  9
+Configuration: Mutation_0.1
+Coût moyen:   23999.3
+Meilleur:     23929
+Pire:         24085
+Écart-type:   64.60
+Véhicules:    25.3
+Temps:        30.2s
+Paramètres:
+  pop_size       : 100
+  tournament_k   : 4
+  elitism        : 4
+  pc             : 0.95
+  pm             : 0.1
+  use_2opt       : True
+  two_opt_prob   : 0.35
+  time_limit     : 30.0
+  generations    : 50000
+Tous les coûts: [24085, 23929, 23984]
+------------------------------------------------------------
+
+RANG 10
+Configuration: Elitism_5
+Coût moyen:   24006.0
+Meilleur:     23846
+Pire:         24091
+Écart-type:   113.21
+Véhicules:    25.0
+Temps:        30.2s
+Paramètres:
+  pop_size       : 100
+  tournament_k   : 4
+  elitism        : 5
+  pc             : 0.95
+  pm             : 0.25
+  use_2opt       : True
+  two_opt_prob   : 0.35
+  time_limit     : 30.0
+  generations    : 50000
+Tous les coûts: [24091, 23846, 24081]
+------------------------------------------------------------
+
+RANG 11
+Configuration: Mutation_0.27
+Coût moyen:   24012.3
+Meilleur:     23734
+Pire:         24416
+Écart-type:   292.19
+Véhicules:    25.7
+Temps:        30.2s
+Paramètres:
+  pop_size       : 100
+  tournament_k   : 4
+  elitism        : 4
+  pc             : 0.95
+  pm             : 0.27
+  use_2opt       : True
+  two_opt_prob   : 0.35
+  time_limit     : 30.0
+  generations    : 50000
+Tous les coûts: [24416, 23887, 23734]
+------------------------------------------------------------
+
+RANG 12
+Configuration: PopSize_80
+Coût moyen:   24100.0
+Meilleur:     23938
+Pire:         24181
+Écart-type:   114.55
+Véhicules:    25.7
+Temps:        30.1s
+Paramètres:
+  pop_size       : 80
+  tournament_k   : 4
+  elitism        : 4
+  pc             : 0.95
+  pm             : 0.25
+  use_2opt       : True
+  two_opt_prob   : 0.35
+  time_limit     : 30.0
+  generations    : 50000
+Tous les coûts: [24181, 24181, 23938]
+------------------------------------------------------------
+
+RANG 13
+Configuration: Mutation_0.3
+Coût moyen:   24137.0
+Meilleur:     23600
+Pire:         24937
+Écart-type:   576.64
+Véhicules:    25.3
+Temps:        30.1s
+Paramètres:
+  pop_size       : 100
+  tournament_k   : 4
+  elitism        : 4
+  pc             : 0.95
+  pm             : 0.3
+  use_2opt       : True
+  two_opt_prob   : 0.35
+  time_limit     : 30.0
+  generations    : 50000
+Tous les coûts: [23600, 23874, 24937]
+------------------------------------------------------------
+
+RANG 14
+Configuration: TwoOpt_0.5
+Coût moyen:   24137.0
+Meilleur:     23950
+Pire:         24391
+Écart-type:   186.17
+Véhicules:    24.7
+Temps:        30.1s
+Paramètres:
+  pop_size       : 100
+  tournament_k   : 4
+  elitism        : 4
+  pc             : 0.95
+  pm             : 0.25
+  use_2opt       : True
+  two_opt_prob   : 0.5
+  time_limit     : 30.0
+  generations    : 50000
+Tous les coûts: [23950, 24070, 24391]
+------------------------------------------------------------
+
+RANG 15
+Configuration: TwoOpt_0.1
+Coût moyen:   24158.7
+Meilleur:     23985
+Pire:         24409
+Écart-type:   181.39
+Véhicules:    25.7
+Temps:        30.3s
+Paramètres:
+  pop_size       : 100
+  tournament_k   : 4
+  elitism        : 4
+  pc             : 0.95
+  pm             : 0.25
+  use_2opt       : True
+  two_opt_prob   : 0.1
+  time_limit     : 30.0
+  generations    : 50000
+Tous les coûts: [24082, 24409, 23985]
+------------------------------------------------------------
+
+RANG 16
+Configuration: Mutation_0.22
+Coût moyen:   24159.0
+Meilleur:     23722
+Pire:         24952
+Écart-type:   561.71
+Véhicules:    25.3
+Temps:        30.2s
+Paramètres:
+  pop_size       : 100
+  tournament_k   : 4
+  elitism        : 4
+  pc             : 0.95
+  pm             : 0.22
+  use_2opt       : True
+  two_opt_prob   : 0.35
+  time_limit     : 30.0
+  generations    : 50000
+Tous les coûts: [23803, 24952, 23722]
+------------------------------------------------------------
+
+RANG 17
+Configuration: PopSize_60
+Coût moyen:   24167.0
+Meilleur:     23868
+Pire:         24533
+Écart-type:   275.59
+Véhicules:    26.0
+Temps:        30.2s
+Paramètres:
+  pop_size       : 60
+  tournament_k   : 4
+  elitism        : 4
+  pc             : 0.95
+  pm             : 0.25
+  use_2opt       : True
+  two_opt_prob   : 0.35
+  time_limit     : 30.0
+  generations    : 50000
+Tous les coûts: [24100, 24533, 23868]
+------------------------------------------------------------
+
+RANG 18
+Configuration: TwoOpt_0.2
+Coût moyen:   24170.0
+Meilleur:     23835
+Pire:         24341
+Écart-type:   236.90
+Véhicules:    25.7
+Temps:        30.3s
+Paramètres:
+  pop_size       : 100
+  tournament_k   : 4
+  elitism        : 4
+  pc             : 0.95
+  pm             : 0.25
+  use_2opt       : True
+  two_opt_prob   : 0.2
+  time_limit     : 30.0
+  generations    : 50000
+Tous les coûts: [24341, 24334, 23835]
+------------------------------------------------------------
+
+RANG 19
+Configuration: Elitism_12
+Coût moyen:   24177.3
+Meilleur:     23864
+Pire:         24429
+Écart-type:   234.75
+Véhicules:    24.7
+Temps:        30.3s
+Paramètres:
+  pop_size       : 100
+  tournament_k   : 4
+  elitism        : 12
+  pc             : 0.95
+  pm             : 0.25
+  use_2opt       : True
+  two_opt_prob   : 0.35
+  time_limit     : 30.0
+  generations    : 50000
+Tous les coûts: [24239, 24429, 23864]
+------------------------------------------------------------
+
+RANG 20
+Configuration: TwoOpt_0.3
+Coût moyen:   24178.0
+Meilleur:     23959
+Pire:         24517
+Écart-type:   243.09
+Véhicules:    25.0
+Temps:        30.4s
+Paramètres:
+  pop_size       : 100
+  tournament_k   : 4
+  elitism        : 4
+  pc             : 0.95
+  pm             : 0.25
+  use_2opt       : True
+  two_opt_prob   : 0.3
+  time_limit     : 30.0
+  generations    : 50000
+Tous les coûts: [23959, 24058, 24517]
+------------------------------------------------------------
+
+STATISTIQUES GLOBALES
+========================================
+Configurations testées: 64
+Meilleur coût global:   23595.3
+Pire coût global:       27423.3
+Coût moyen global:      24372.8
+Amélioration possible:  14.0%
+
+CONFIGURATION RECOMMANDÉE
+========================================
+Nom: Tournament_7
+Paramètres optimaux:
+  pop_size = 100
+  tournament_k = 7
+  elitism = 4
+  pc = 0.95
+  pm = 0.25
+  use_2opt = True
+  two_opt_prob = 0.35
+  time_limit = 30.0
+  generations = 50000
