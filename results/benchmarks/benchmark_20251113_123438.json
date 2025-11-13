@@ -1,0 +1,2216 @@
+{
+  "timestamp": "20251113_123438",
+  "instance": "X-n101-k25",
+  "dimension": 101,
+  "capacity": 206,
+  "n_runs": 1,
+  "baseline_cost": 28544,
+  "target_optimum": 22901,
+  "default_params": {
+    "population_size": 50,
+    "n_elite": 5,
+    "mutation_rate": 0.1,
+    "tournament_size": 3,
+    "n_close": 10
+  },
+  "parameter_spaces": {
+    "population_size": [
+      15,
+      20,
+      25,
+      30,
+      35,
+      40,
+      45,
+      50,
+      55,
+      60,
+      65,
+      70,
+      75,
+      80,
+      85,
+      90,
+      95,
+      100,
+      110,
+      120,
+      130,
+      140,
+      150,
+      160,
+      170,
+      180,
+      200,
+      220,
+      250,
+      280,
+      300,
+      350,
+      400
+    ],
+    "n_elite": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      18,
+      20,
+      22,
+      25,
+      28,
+      30,
+      35,
+      40
+    ],
+    "mutation_rate": [
+      0.005,
+      0.01,
+      0.015,
+      0.02,
+      0.025,
+      0.03,
+      0.035,
+      0.04,
+      0.045,
+      0.05,
+      0.06,
+      0.07,
+      0.08,
+      0.09,
+      0.1,
+      0.11,
+      0.12,
+      0.13,
+      0.14,
+      0.15,
+      0.16,
+      0.17,
+      0.18,
+      0.19,
+      0.2,
+      0.22,
+      0.24,
+      0.26,
+      0.28,
+      0.3,
+      0.32,
+      0.35,
+      0.38,
+      0.4,
+      0.45,
+      0.5
+    ],
+    "tournament_size": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      18,
+      20,
+      22,
+      25,
+      28,
+      30
+    ],
+    "n_close": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      12,
+      14,
+      15,
+      16,
+      18,
+      20,
+      22,
+      25,
+      28,
+      30,
+      32,
+      35,
+      38,
+      40,
+      45,
+      50,
+      55,
+      60,
+      70,
+      80,
+      100
+    ]
+  },
+  "total_configs": 144,
+  "results": [
+    {
+      "param_name": "population_size",
+      "results": [
+        {
+          "param": "population_size",
+          "value": 120,
+          "cost": 28795,
+          "time": 60.36689066886902,
+          "routes": 27,
+          "params": {
+            "population_size": 120,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "population_size",
+          "value": 160,
+          "cost": 28866,
+          "time": 60.643462896347046,
+          "routes": 27,
+          "params": {
+            "population_size": 160,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "population_size",
+          "value": 90,
+          "cost": 28895,
+          "time": 60.26291346549988,
+          "routes": 27,
+          "params": {
+            "population_size": 90,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "population_size",
+          "value": 75,
+          "cost": 28948,
+          "time": 60.19737410545349,
+          "routes": 27,
+          "params": {
+            "population_size": 75,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "population_size",
+          "value": 130,
+          "cost": 29012,
+          "time": 60.89973759651184,
+          "routes": 28,
+          "params": {
+            "population_size": 130,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "population_size",
+          "value": 110,
+          "cost": 29061,
+          "time": 60.6189706325531,
+          "routes": 27,
+          "params": {
+            "population_size": 110,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "population_size",
+          "value": 250,
+          "cost": 29092,
+          "time": 60.21573734283447,
+          "routes": 27,
+          "params": {
+            "population_size": 250,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "population_size",
+          "value": 350,
+          "cost": 29161,
+          "time": 60.18869996070862,
+          "routes": 27,
+          "params": {
+            "population_size": 350,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "population_size",
+          "value": 400,
+          "cost": 29173,
+          "time": 60.144763708114624,
+          "routes": 28,
+          "params": {
+            "population_size": 400,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "population_size",
+          "value": 200,
+          "cost": 29226,
+          "time": 60.160096645355225,
+          "routes": 28,
+          "params": {
+            "population_size": 200,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "population_size",
+          "value": 40,
+          "cost": 29317,
+          "time": 60.20434594154358,
+          "routes": 28,
+          "params": {
+            "population_size": 40,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "population_size",
+          "value": 70,
+          "cost": 29326,
+          "time": 60.015018939971924,
+          "routes": 27,
+          "params": {
+            "population_size": 70,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "population_size",
+          "value": 20,
+          "cost": 29363,
+          "time": 60.238138914108276,
+          "routes": 28,
+          "params": {
+            "population_size": 20,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "population_size",
+          "value": 300,
+          "cost": 29500,
+          "time": 60.1041841506958,
+          "routes": 28,
+          "params": {
+            "population_size": 300,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "population_size",
+          "value": 60,
+          "cost": 29501,
+          "time": 60.200629472732544,
+          "routes": 28,
+          "params": {
+            "population_size": 60,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "population_size",
+          "value": 45,
+          "cost": 29517,
+          "time": 60.13561820983887,
+          "routes": 27,
+          "params": {
+            "population_size": 45,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "population_size",
+          "value": 35,
+          "cost": 29531,
+          "time": 60.061930656433105,
+          "routes": 28,
+          "params": {
+            "population_size": 35,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "population_size",
+          "value": 80,
+          "cost": 29574,
+          "time": 60.19549322128296,
+          "routes": 27,
+          "params": {
+            "population_size": 80,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "population_size",
+          "value": 30,
+          "cost": 29586,
+          "time": 60.39553141593933,
+          "routes": 28,
+          "params": {
+            "population_size": 30,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "population_size",
+          "value": 170,
+          "cost": 29590,
+          "time": 60.34972167015076,
+          "routes": 28,
+          "params": {
+            "population_size": 170,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "population_size",
+          "value": 180,
+          "cost": 29593,
+          "time": 60.18565034866333,
+          "routes": 27,
+          "params": {
+            "population_size": 180,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "population_size",
+          "value": 280,
+          "cost": 29606,
+          "time": 60.225643157958984,
+          "routes": 28,
+          "params": {
+            "population_size": 280,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "population_size",
+          "value": 85,
+          "cost": 29616,
+          "time": 60.04896092414856,
+          "routes": 28,
+          "params": {
+            "population_size": 85,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "population_size",
+          "value": 150,
+          "cost": 29634,
+          "time": 60.84383845329285,
+          "routes": 28,
+          "params": {
+            "population_size": 150,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "population_size",
+          "value": 65,
+          "cost": 29683,
+          "time": 60.17882466316223,
+          "routes": 28,
+          "params": {
+            "population_size": 65,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "population_size",
+          "value": 220,
+          "cost": 29708,
+          "time": 60.45042681694031,
+          "routes": 28,
+          "params": {
+            "population_size": 220,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "population_size",
+          "value": 55,
+          "cost": 29730,
+          "time": 60.05179738998413,
+          "routes": 28,
+          "params": {
+            "population_size": 55,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "population_size",
+          "value": 95,
+          "cost": 29777,
+          "time": 60.48461389541626,
+          "routes": 28,
+          "params": {
+            "population_size": 95,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "population_size",
+          "value": 100,
+          "cost": 29814,
+          "time": 60.422075271606445,
+          "routes": 27,
+          "params": {
+            "population_size": 100,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "population_size",
+          "value": 140,
+          "cost": 29971,
+          "time": 60.128690242767334,
+          "routes": 29,
+          "params": {
+            "population_size": 140,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "population_size",
+          "value": 50,
+          "cost": 29992,
+          "time": 60.492745876312256,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "population_size",
+          "value": 25,
+          "cost": 30077,
+          "time": 61.1754949092865,
+          "routes": 28,
+          "params": {
+            "population_size": 25,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "population_size",
+          "value": 15,
+          "cost": 30157,
+          "time": 60.1816463470459,
+          "routes": 29,
+          "params": {
+            "population_size": 15,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        }
+      ]
+    },
+    {
+      "param_name": "n_elite",
+      "results": [
+        {
+          "param": "n_elite",
+          "value": 5,
+          "cost": 28767,
+          "time": 60.18562841415405,
+          "routes": 27,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "n_elite",
+          "value": 4,
+          "cost": 28963,
+          "time": 60.23406648635864,
+          "routes": 27,
+          "params": {
+            "population_size": 50,
+            "n_elite": 4,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "n_elite",
+          "value": 13,
+          "cost": 29174,
+          "time": 60.03049945831299,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 13,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "n_elite",
+          "value": 15,
+          "cost": 29270,
+          "time": 60.588064193725586,
+          "routes": 27,
+          "params": {
+            "population_size": 50,
+            "n_elite": 15,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "n_elite",
+          "value": 3,
+          "cost": 29308,
+          "time": 60.04993486404419,
+          "routes": 27,
+          "params": {
+            "population_size": 50,
+            "n_elite": 3,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "n_elite",
+          "value": 11,
+          "cost": 29312,
+          "time": 60.036346673965454,
+          "routes": 27,
+          "params": {
+            "population_size": 50,
+            "n_elite": 11,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "n_elite",
+          "value": 40,
+          "cost": 29459,
+          "time": 60.002387046813965,
+          "routes": 27,
+          "params": {
+            "population_size": 50,
+            "n_elite": 40,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "n_elite",
+          "value": 22,
+          "cost": 29518,
+          "time": 60.01606297492981,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 22,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "n_elite",
+          "value": 6,
+          "cost": 29526,
+          "time": 60.42090201377869,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 6,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "n_elite",
+          "value": 20,
+          "cost": 29557,
+          "time": 60.008859157562256,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 20,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "n_elite",
+          "value": 2,
+          "cost": 29578,
+          "time": 60.07284164428711,
+          "routes": 27,
+          "params": {
+            "population_size": 50,
+            "n_elite": 2,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "n_elite",
+          "value": 12,
+          "cost": 29604,
+          "time": 60.70845317840576,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 12,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "n_elite",
+          "value": 14,
+          "cost": 29630,
+          "time": 60.01677060127258,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 14,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "n_elite",
+          "value": 7,
+          "cost": 29663,
+          "time": 60.135173320770264,
+          "routes": 29,
+          "params": {
+            "population_size": 50,
+            "n_elite": 7,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "n_elite",
+          "value": 8,
+          "cost": 29694,
+          "time": 60.062793254852295,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 8,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "n_elite",
+          "value": 9,
+          "cost": 29729,
+          "time": 60.06971716880798,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 9,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "n_elite",
+          "value": 18,
+          "cost": 29748,
+          "time": 60.188156604766846,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 18,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "n_elite",
+          "value": 1,
+          "cost": 29749,
+          "time": 61.80141854286194,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 1,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "n_elite",
+          "value": 30,
+          "cost": 29936,
+          "time": 60.059492349624634,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 30,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "n_elite",
+          "value": 16,
+          "cost": 29968,
+          "time": 60.83753561973572,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 16,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "n_elite",
+          "value": 10,
+          "cost": 29985,
+          "time": 60.195892572402954,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 10,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "n_elite",
+          "value": 28,
+          "cost": 29994,
+          "time": 60.044976234436035,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 28,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "n_elite",
+          "value": 35,
+          "cost": 30023,
+          "time": 60.00347399711609,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 35,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "n_elite",
+          "value": 25,
+          "cost": 30101,
+          "time": 60.017032623291016,
+          "routes": 29,
+          "params": {
+            "population_size": 50,
+            "n_elite": 25,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        }
+      ]
+    },
+    {
+      "param_name": "mutation_rate",
+      "results": [
+        {
+          "param": "mutation_rate",
+          "value": 0.28,
+          "cost": 28676,
+          "time": 60.13500666618347,
+          "routes": 27,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.28,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "mutation_rate",
+          "value": 0.22,
+          "cost": 28983,
+          "time": 60.02899479866028,
+          "routes": 27,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.22,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "mutation_rate",
+          "value": 0.09,
+          "cost": 29070,
+          "time": 60.0671911239624,
+          "routes": 27,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.09,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "mutation_rate",
+          "value": 0.19,
+          "cost": 29072,
+          "time": 60.20962119102478,
+          "routes": 27,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.19,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "mutation_rate",
+          "value": 0.03,
+          "cost": 29077,
+          "time": 60.397547483444214,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.03,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "mutation_rate",
+          "value": 0.45,
+          "cost": 29087,
+          "time": 60.02622604370117,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.45,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "mutation_rate",
+          "value": 0.16,
+          "cost": 29309,
+          "time": 60.02997708320618,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.16,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "mutation_rate",
+          "value": 0.045,
+          "cost": 29320,
+          "time": 60.11077380180359,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.045,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "mutation_rate",
+          "value": 0.35,
+          "cost": 29380,
+          "time": 60.21779465675354,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.35,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "mutation_rate",
+          "value": 0.13,
+          "cost": 29397,
+          "time": 60.081223011016846,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.13,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "mutation_rate",
+          "value": 0.08,
+          "cost": 29450,
+          "time": 60.04938888549805,
+          "routes": 29,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.08,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "mutation_rate",
+          "value": 0.035,
+          "cost": 29459,
+          "time": 60.24731707572937,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.035,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "mutation_rate",
+          "value": 0.1,
+          "cost": 29518,
+          "time": 60.36580157279968,
+          "routes": 27,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "mutation_rate",
+          "value": 0.005,
+          "cost": 29523,
+          "time": 60.14197254180908,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.005,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "mutation_rate",
+          "value": 0.4,
+          "cost": 29634,
+          "time": 60.06989002227783,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.4,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "mutation_rate",
+          "value": 0.06,
+          "cost": 29645,
+          "time": 63.23621106147766,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.06,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "mutation_rate",
+          "value": 0.38,
+          "cost": 29709,
+          "time": 60.29767298698425,
+          "routes": 27,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.38,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "mutation_rate",
+          "value": 0.12,
+          "cost": 29711,
+          "time": 60.01239323616028,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.12,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "mutation_rate",
+          "value": 0.24,
+          "cost": 29757,
+          "time": 60.365357398986816,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.24,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "mutation_rate",
+          "value": 0.18,
+          "cost": 29786,
+          "time": 60.786970138549805,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.18,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "mutation_rate",
+          "value": 0.01,
+          "cost": 29802,
+          "time": 60.056161880493164,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.01,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "mutation_rate",
+          "value": 0.3,
+          "cost": 29807,
+          "time": 60.38479137420654,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.3,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "mutation_rate",
+          "value": 0.2,
+          "cost": 29828,
+          "time": 60.25672364234924,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.2,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "mutation_rate",
+          "value": 0.5,
+          "cost": 29837,
+          "time": 60.006420612335205,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.5,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "mutation_rate",
+          "value": 0.17,
+          "cost": 29853,
+          "time": 60.246673583984375,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.17,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "mutation_rate",
+          "value": 0.02,
+          "cost": 29859,
+          "time": 60.04970121383667,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.02,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "mutation_rate",
+          "value": 0.14,
+          "cost": 29860,
+          "time": 60.04363203048706,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.14,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "mutation_rate",
+          "value": 0.025,
+          "cost": 29882,
+          "time": 60.32625150680542,
+          "routes": 27,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.025,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "mutation_rate",
+          "value": 0.32,
+          "cost": 29884,
+          "time": 60.02419567108154,
+          "routes": 27,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.32,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "mutation_rate",
+          "value": 0.15,
+          "cost": 29892,
+          "time": 60.014578342437744,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.15,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "mutation_rate",
+          "value": 0.07,
+          "cost": 29895,
+          "time": 61.24227952957153,
+          "routes": 27,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.07,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "mutation_rate",
+          "value": 0.11,
+          "cost": 29956,
+          "time": 60.0150842666626,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.11,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "mutation_rate",
+          "value": 0.26,
+          "cost": 30024,
+          "time": 60.10665941238403,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.26,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "mutation_rate",
+          "value": 0.04,
+          "cost": 30068,
+          "time": 60.06159567832947,
+          "routes": 29,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.04,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "mutation_rate",
+          "value": 0.015,
+          "cost": 30198,
+          "time": 60.03277325630188,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.015,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "mutation_rate",
+          "value": 0.05,
+          "cost": 30203,
+          "time": 60.190470695495605,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.05,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        }
+      ]
+    },
+    {
+      "param_name": "tournament_size",
+      "results": [
+        {
+          "param": "tournament_size",
+          "value": 8,
+          "cost": 28834,
+          "time": 60.412530183792114,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 8,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "tournament_size",
+          "value": 5,
+          "cost": 29338,
+          "time": 60.02422261238098,
+          "routes": 27,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 5,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "tournament_size",
+          "value": 15,
+          "cost": 29379,
+          "time": 60.55277228355408,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 15,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "tournament_size",
+          "value": 10,
+          "cost": 29389,
+          "time": 60.010985374450684,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 10,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "tournament_size",
+          "value": 4,
+          "cost": 29504,
+          "time": 60.00228667259216,
+          "routes": 27,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 4,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "tournament_size",
+          "value": 11,
+          "cost": 29585,
+          "time": 60.58898043632507,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 11,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "tournament_size",
+          "value": 6,
+          "cost": 29617,
+          "time": 60.02174782752991,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 6,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "tournament_size",
+          "value": 30,
+          "cost": 29674,
+          "time": 60.01804041862488,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 30,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "tournament_size",
+          "value": 7,
+          "cost": 29678,
+          "time": 60.63985872268677,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 7,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "tournament_size",
+          "value": 3,
+          "cost": 29684,
+          "time": 60.08179235458374,
+          "routes": 27,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "tournament_size",
+          "value": 13,
+          "cost": 29915,
+          "time": 60.4215407371521,
+          "routes": 29,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 13,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "tournament_size",
+          "value": 18,
+          "cost": 29926,
+          "time": 60.08302688598633,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 18,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "tournament_size",
+          "value": 9,
+          "cost": 29963,
+          "time": 61.166192293167114,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 9,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "tournament_size",
+          "value": 16,
+          "cost": 29986,
+          "time": 60.31017518043518,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 16,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "tournament_size",
+          "value": 14,
+          "cost": 29991,
+          "time": 60.00427746772766,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 14,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "tournament_size",
+          "value": 20,
+          "cost": 30047,
+          "time": 60.19714021682739,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 20,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "tournament_size",
+          "value": 2,
+          "cost": 30081,
+          "time": 60.54750370979309,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 2,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "tournament_size",
+          "value": 22,
+          "cost": 30083,
+          "time": 60.12469482421875,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 22,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "tournament_size",
+          "value": 25,
+          "cost": 30190,
+          "time": 60.067949056625366,
+          "routes": 29,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 25,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "tournament_size",
+          "value": 28,
+          "cost": 30298,
+          "time": 60.043424129486084,
+          "routes": 29,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 28,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "tournament_size",
+          "value": 12,
+          "cost": 30557,
+          "time": 60.04430556297302,
+          "routes": 29,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 12,
+            "n_close": 10
+          }
+        }
+      ]
+    },
+    {
+      "param_name": "n_close",
+      "results": [
+        {
+          "param": "n_close",
+          "value": 3,
+          "cost": 29155,
+          "time": 60.32883977890015,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 3
+          }
+        },
+        {
+          "param": "n_close",
+          "value": 15,
+          "cost": 29164,
+          "time": 60.1069221496582,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 15
+          }
+        },
+        {
+          "param": "n_close",
+          "value": 10,
+          "cost": 29185,
+          "time": 60.42295527458191,
+          "routes": 27,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 10
+          }
+        },
+        {
+          "param": "n_close",
+          "value": 32,
+          "cost": 29216,
+          "time": 60.17345142364502,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 32
+          }
+        },
+        {
+          "param": "n_close",
+          "value": 100,
+          "cost": 29278,
+          "time": 60.068357706069946,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 100
+          }
+        },
+        {
+          "param": "n_close",
+          "value": 12,
+          "cost": 29342,
+          "time": 60.164045333862305,
+          "routes": 27,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 12
+          }
+        },
+        {
+          "param": "n_close",
+          "value": 9,
+          "cost": 29393,
+          "time": 60.45040225982666,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 9
+          }
+        },
+        {
+          "param": "n_close",
+          "value": 6,
+          "cost": 29422,
+          "time": 60.39640784263611,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 6
+          }
+        },
+        {
+          "param": "n_close",
+          "value": 2,
+          "cost": 29433,
+          "time": 60.04057502746582,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 2
+          }
+        },
+        {
+          "param": "n_close",
+          "value": 50,
+          "cost": 29445,
+          "time": 60.328351736068726,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 50
+          }
+        },
+        {
+          "param": "n_close",
+          "value": 14,
+          "cost": 29464,
+          "time": 60.481467962265015,
+          "routes": 27,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 14
+          }
+        },
+        {
+          "param": "n_close",
+          "value": 20,
+          "cost": 29506,
+          "time": 60.075440883636475,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 20
+          }
+        },
+        {
+          "param": "n_close",
+          "value": 80,
+          "cost": 29560,
+          "time": 60.162489891052246,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 80
+          }
+        },
+        {
+          "param": "n_close",
+          "value": 5,
+          "cost": 29570,
+          "time": 61.28275227546692,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 5
+          }
+        },
+        {
+          "param": "n_close",
+          "value": 8,
+          "cost": 29582,
+          "time": 60.43241858482361,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 8
+          }
+        },
+        {
+          "param": "n_close",
+          "value": 40,
+          "cost": 29590,
+          "time": 60.412184715270996,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 40
+          }
+        },
+        {
+          "param": "n_close",
+          "value": 18,
+          "cost": 29599,
+          "time": 60.05410671234131,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 18
+          }
+        },
+        {
+          "param": "n_close",
+          "value": 4,
+          "cost": 29656,
+          "time": 60.36412978172302,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 4
+          }
+        },
+        {
+          "param": "n_close",
+          "value": 30,
+          "cost": 29693,
+          "time": 60.03845739364624,
+          "routes": 27,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 30
+          }
+        },
+        {
+          "param": "n_close",
+          "value": 38,
+          "cost": 29725,
+          "time": 60.90437316894531,
+          "routes": 27,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 38
+          }
+        },
+        {
+          "param": "n_close",
+          "value": 22,
+          "cost": 29745,
+          "time": 61.53147029876709,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 22
+          }
+        },
+        {
+          "param": "n_close",
+          "value": 35,
+          "cost": 29793,
+          "time": 60.045955419540405,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 35
+          }
+        },
+        {
+          "param": "n_close",
+          "value": 16,
+          "cost": 29794,
+          "time": 60.31090998649597,
+          "routes": 27,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 16
+          }
+        },
+        {
+          "param": "n_close",
+          "value": 55,
+          "cost": 29825,
+          "time": 60.316380977630615,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 55
+          }
+        },
+        {
+          "param": "n_close",
+          "value": 25,
+          "cost": 29858,
+          "time": 60.230772972106934,
+          "routes": 27,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 25
+          }
+        },
+        {
+          "param": "n_close",
+          "value": 70,
+          "cost": 29884,
+          "time": 60.22879362106323,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 70
+          }
+        },
+        {
+          "param": "n_close",
+          "value": 7,
+          "cost": 29890,
+          "time": 60.16045331954956,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 7
+          }
+        },
+        {
+          "param": "n_close",
+          "value": 28,
+          "cost": 29956,
+          "time": 61.19871115684509,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 28
+          }
+        },
+        {
+          "param": "n_close",
+          "value": 45,
+          "cost": 29964,
+          "time": 60.04985594749451,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 45
+          }
+        },
+        {
+          "param": "n_close",
+          "value": 60,
+          "cost": 30073,
+          "time": 60.25804829597473,
+          "routes": 28,
+          "params": {
+            "population_size": 50,
+            "n_elite": 5,
+            "mutation_rate": 0.1,
+            "tournament_size": 3,
+            "n_close": 60
+          }
+        }
+      ]
+    }
+  ]
+}

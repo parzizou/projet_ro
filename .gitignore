@@ -28,8 +28,10 @@ env/
 .DS_Store
 Thumbs.db
 
-# Results and output files
-results/
+# Results and output files (mais on garde les benchmarks)
+results/parameter_tests/
+results/parameter_analysis/
+results/debug_model.lp
 
 # Test visualizations output
 test_visualizations/
