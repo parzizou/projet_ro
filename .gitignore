@@ -30,3 +30,23 @@ Thumbs.db
 
 # Results and output files
 results/
+
+# Test visualizations output
+test_visualizations/
+
+# Temporary scripts
+check_optimum.py
+show_structure.py
+
+# Demo and test folders
+demos/
+scripts/
+
+# Obsolete documentation (removed in cleanup)
+docs/fast_exploration_guide.md
+docs/FAST_EXPLORATION_RECAP.md
+docs/GRILLE_ETENDUE.md
+docs/MULTITHREADING.md
+docs/exemple_multithreading.py
+docs/VISUALISATIONS_EXPLORATION.md
+docs/optimization_guide.md
